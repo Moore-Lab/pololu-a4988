@@ -14,6 +14,41 @@ absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
 
+## 2026-11-24 (later) — Drivers identified as A4988; wiring cut to that part
+
+Lucas read `4988ET` off the driver module: Allegro **A4988**, 28-pin QFN
+(`A4988SETTR-T`). The README's two driver families are replaced by one
+A4988 section, every figure checked against the Allegro datasheet rather than
+recalled (the PDF was fetched and its text extracted locally; facts taken from
+it are marked **[DS]** in the README).
+
+What the datasheet settled, some of it against what I would have written from
+memory:
+- `ITripMAX = VREF / (8 × RS)`. `RS` is a carrier-board choice, not a chip
+  property, so the `4988ET` marking does not give it — 0.050 / 0.068 / 0.100 Ω
+  are all in circulation and span a factor of two in current. Must be read off
+  the board. VREF table for all three is in the README.
+- **No internal pull-ups anywhere on the part.** The only internal resistors
+  are pull-downs on MS1 (100 kΩ), MS2 (50 kΩ), MS3 (100 kΩ). RESET, SLEEP and
+  ENABLE have none. So the usual RESET–SLEEP jumper works only because the
+  *carrier* pulls SLEEP high — added a step to measure SLEEP and a 10 kΩ
+  fallback, rather than asserting the jumper always works.
+- ENABLE: logic LOW enables the outputs. `ENABLE_ACTIVE_LOW 1` is correct;
+  the comment in the sketch now says so with the reason.
+- Microstep truth table: 1/8 is MS1=H, MS2=H, MS3=L. With the pull-downs,
+  floating means full step, so MS1/MS2 must be actively tied to 5 V.
+- VBB operating range **8–35 V** — a 5 V supply will not run it.
+- Current-trip error is ±5 % near full scale but **±15 % at the 38.27 %
+  microstep level**, so 1/8 microstepping divides the step and not the error.
+  The README now says to treat the camera, not the step count, as position.
+- STEP minimum 1 µs high / 1 µs low, 200 ns setup and hold: AccelStepper on a
+  16 MHz AVR cannot approach these, so nothing to tune.
+
+Also added a bring-up step 0 (set VREF, check RESET/SLEEP, check MS wiring,
+fit the 100 µF) to be done before a motor is ever plugged in.
+
+---
+
 ## 2026-11-24 — Repo created; firmware for Z1/Z2 with four limit switches
 
 **Why.** Lucas is setting up a lens on two stepper motors that push it along

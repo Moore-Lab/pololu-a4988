@@ -69,9 +69,11 @@
 #define Z2_MIN_PIN 9
 #define Z2_MAX_PIN 10
 
-// Most driver modules enable on a LOW. A4988/DRV8825/TMC2209 carriers do;
-// an opto-isolated PUL/DIR/ENA brick wired common-anode is usually the other
-// way round, so flip this if `disable` energises your motors.
+// Drivers here are A4988 carriers. The datasheet is explicit: a logic LOW on
+// ENABLE turns the output FETs on, a logic HIGH turns them off — so 1 is
+// right and should be left alone. (STEP, DIR and MSx stay live either way;
+// only the FETs are gated.) Flip to 0 only for a driver that inverts its
+// enable, e.g. an opto-isolated brick wired common-anode.
 #define ENABLE_ACTIVE_LOW 1
 
 // ---------------------------------------------------------------------------

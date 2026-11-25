@@ -153,21 +153,21 @@ crashing the lens would destroy something expensive.
 
 ---
 
-## Wiring the drivers
+## Wiring the drivers — A4988
 
-> **Which drivers are these?** "Compact" covers two families that wire very
-> differently. Tell me the model and I will cut this down to the one that
-> applies. Both are below in the meantime. The firmware is the same either
-> way — it only emits STEP, DIR and ENABLE.
+The top-side marking **`4988ET`** is the Allegro **A4988** in the 28-pin QFN
+(`A4988SETTR-T`). Every figure below marked **[DS]** is from the
+[Allegro datasheet](https://www.allegromicro.com/-/media/files/datasheets/a4988-datasheet.pdf)
+and was read off it, not recalled; the rest is carrier-board practice, which
+the datasheet does not cover.
 
-### Family A — carrier boards (A4988, DRV8825, TMC2208/2209)
-
-The small ~15 × 20 mm boards with a trimpot. One per motor.
+One carrier per motor. The 16-pin carriers (Pololu and the StepStick clones)
+all use this layout:
 
 ```
           ┌─────────────┐
-   ENABLE │1          16│ VMOT  ── motor supply +  (12–24 V)
-      MS1 │2          15│ GND   ── motor supply −  AND Arduino GND
+   ENABLE │1          16│ VMOT  ── motor supply +   (12–24 V; 8 V minimum)
+      MS1 │2          15│ GND   ── motor supply −   AND Arduino GND
       MS2 │3          14│ 2B ┐
       MS3 │4          13│ 2A ┘ coil B
     RESET │5          12│ 1A ┐
@@ -177,82 +177,148 @@ The small ~15 × 20 mm boards with a trimpot. One per motor.
           └─────────────┘
 ```
 
-Per driver:
+### Arduino → driver
 
-* **VDD → Arduino 5V**, the **GND beside VDD → Arduino GND**
-* **VMOT → motor supply +**, the **GND beside VMOT → motor supply −**
-* **tie the motor supply − to Arduino GND.** They must share a ground or the
-  STEP/DIR signals have no reference
-* **RESET and SLEEP jumpered together.** RESET floats low from the factory and
-  the driver simply sits in reset if you skip this — the single most common
-  reason an A4988 does nothing
-* **STEP** → D3 (Z1) / D5 (Z2); **DIR** → D2 (Z1) / D4 (Z2); **ENABLE** →
-  D6 on *both*
-* **1A/1B is one coil, 2A/2B the other.** Find the pairs with a multimeter:
-  the two wires that read a few ohms to each other are a coil. Getting a wire
-  from each coil swapped just reverses that axis
-* **MS1/MS2/MS3** set microstepping — table below. Must match `MICROSTEPS`
-
-| microstep | A4988 MS1,MS2,MS3 | DRV8825 M0,M1,M2 |
+| Mega pin | Z1 driver | Z2 driver |
 |---|---|---|
-| full | L L L | L L L |
-| 1/2 | H L L | H L L |
-| 1/4 | L H L | L H L |
-| **1/8** | **H H L** | **H H L** |
-| 1/16 | H H H | L L H |
-| 1/32 | — | H L H |
+| D2 / D4 | **DIR** | **DIR** |
+| D3 / D5 | **STEP** | **STEP** |
+| D6 | **ENABLE** | **ENABLE** (same wire) |
+| 5V | **VDD** | **VDD** |
+| GND | **GND** (pin 9) | **GND** (pin 9) |
 
-**Two things that destroy these boards:**
+Three signals and two supplies per driver. That is the whole interface — the
+A4988 has no feedback of any kind, which is why the limit switches are the
+only thing that knows where the stage really is.
 
-1. **A 100 µF electrolytic across VMOT/GND, physically close to the driver**,
-   before you apply motor power. Not optional — the inductive kick from the
-   motor will otherwise take out the chip.
-2. **Never plug or unplug a motor with the driver powered.** It kills A4988s
-   and DRV8825s reliably.
+* **VDD operating range is 3–5.5 V [DS]**, so the Mega's 5 V rail is right.
+  A logic high must be ≥ 0.7 × VDD = **3.5 V**, a low ≤ 1.5 V [DS]; a Mega
+  output swings the full 0–5 V, so no level shifting and no pull-ups.
+* **The motor supply − must be tied to Arduino GND.** STEP and DIR are
+  referenced to it; without a shared ground they mean nothing.
+* **1A/1B is one coil, 2A/2B the other.** Find the pairs with a multimeter —
+  the two wires reading a few ohms to each other are one coil. Swapping the
+  two wires *within* a coil reverses that axis, which is what `Z1_DIR_INVERT`
+  is for; swapping wires *between* coils makes the motor buzz and not turn.
+* **STEP timing [DS]:** minimum 1 µs high, 1 µs low, with 200 ns setup and
+  hold on DIR/MSx. AccelStepper on a 16 MHz AVR spends several microseconds
+  per `digitalWrite`, so it cannot get near these limits. Nothing to tune.
 
-**Set the current limit before the motor ever turns.** With the motor
-disconnected and only logic power applied, measure Vref between the trimpot
-wiper and GND:
+### RESET and SLEEP — the pins that make a new board look dead
 
-* **A4988:** `Vref = I × 8 × Rcs`. Check the sense resistors on *your* board —
-  0.068 Ω and 0.05 Ω are both common, and they give different answers. At
-  0.068 Ω, 1.0 A wants **0.54 V**.
-* **DRV8825:** `Vref = I / 2`. 1.0 A wants **0.50 V**.
+Both are **active low [DS]**, and the datasheet is blunt about RESET: *all
+STEP inputs are ignored until RESET is set high*. A board whose RESET sits low
+therefore accepts your step pulses and silently discards every one.
 
-Set it to the motor's rated phase current or a little under. Above ~1 A these
-boards need a heatsink and some airflow.
+**The datasheet lists no internal pull-ups anywhere on this chip.** The only
+internal resistors are pull-*downs*, on MS1 (100 kΩ), MS2 (50 kΩ) and MS3
+(100 kΩ) [DS]. RESET, SLEEP and ENABLE have none, so they must be driven or
+pulled high by the carrier or by you.
 
-### Family B — opto-isolated bricks (TB6600, DM542T, DM320T)
+The usual fix is **a wire jumper from RESET to SLEEP**, which works only
+because the carrier pulls SLEEP high. Check that yours actually does, because
+the clones vary: with VDD on and nothing else connected, **measure SLEEP to
+GND — it should read about 5 V.** If it reads 0 V, run a **10 kΩ from each of
+RESET and SLEEP up to VDD** instead of the jumper.
 
-The boxed drivers with screw terminals and DIP switches. Wire **common
-anode**, which is what works directly from a 5 V Arduino:
+Coming out of sleep the datasheet asks for **1 ms before the first STEP** [DS],
+so the charge pump can settle. The firmware never uses sleep, so this only
+matters if you add it later.
+
+### ENABLE
+
+**Logic LOW enables the outputs; logic HIGH disables them [DS].** So
+`#define ENABLE_ACTIVE_LOW 1` in the sketch is correct for these — leave it
+alone.
+
+Worth knowing: STEP, DIR and MSx stay live regardless of ENABLE [DS]. The
+translator keeps counting while the FETs are off, so the chip's own idea of
+microstep position survives a disable. The firmware does not rely on that.
+
+### Microstepping — MS1, MS2, MS3
+
+Verbatim from the datasheet's Table 1:
+
+| MS1 | MS2 | MS3 | resolution |
+|---|---|---|---|
+| L | L | L | full step |
+| H | L | L | 1/2 |
+| L | H | L | 1/4 |
+| **H** | **H** | **L** | **1/8** ← `MICROSTEPS 8` |
+| H | H | H | 1/16 |
+
+The internal pull-downs mean **floating = full step**, so MS1 and MS2 must be
+actively pulled up. For 1/8: **tie MS1 and MS2 to VDD (5 V), leave MS3 open.**
+Two wires per driver.
+
+If you change this later, change `MICROSTEPS` in the sketch to match — they
+are two halves of one number and nothing checks that they agree.
+
+> **What 1/8 does and does not buy.** It divides the *step*, not the *error*.
+> The datasheet's own current-trip accuracy is **±5 % near full current but
+> ±15 % at the 38.27 % microstep level [DS]**, and that error lands straight on
+> the microstep position. The nominal 156 nm is a commanded increment; the
+> achieved one is some multiple of it. Use microstepping here for smoothness
+> and quiet, and treat the camera — not the step count — as the position
+> measurement.
+
+### Current limit — set it before the motor ever turns
+
+From the datasheet:
 
 ```
-   Arduino 5V ──┬── PUL+
-                ├── DIR+
-                └── ENA+
-
-   Arduino D3 ───── PUL−        (D5 for Z2)
-   Arduino D2 ───── DIR−        (D4 for Z2)
-   Arduino D6 ───── ENA−        (or leave ENA− disconnected, see below)
-
-   motor supply + ── VCC        (typically 24 V)
-   motor supply − ── GND
-   motor coil A ──── A+ / A−
-   motor coil B ──── B+ / B−
+ITripMAX = VREF / (8 × RS)        rearranged:   VREF = 8 × RS × I
 ```
 
-* the inputs are **opto-isolated**, so the Arduino GND does *not* need to go to
-  the driver. The motor supply ground does
-* **the logic is inverted** — pulling the `−` pin LOW turns the opto *on*.
-  Step pulses work either way (the driver counts edges), but **ENABLE does
-  not**: on most of these, driving ENA *active* **disables** the motor. So set
-  `#define ENABLE_ACTIVE_LOW 0` in the sketch, or simply **leave ENA−
-  disconnected**, which leaves the driver permanently enabled. For a first
-  bring-up, leave it disconnected
-* **current and microstepping are DIP switches**, not a trimpot — read the
-  table printed on the case. No Vref to set
-* these want a proper supply, usually 24 V at 2–4 A
+`RS` is the pair of sense resistors on the carrier, **not** a property of the
+chip — so `4988ET` identifies the IC and tells you nothing about the number you
+actually need. Read it off the two small SMD resistors beside the chip:
+
+| marking | RS | VREF per amp | for 1.0 A | for 1.5 A |
+|---|---|---|---|---|
+| `R050` | 0.050 Ω | 0.400 V/A | 0.40 V | 0.60 V |
+| `R068` | 0.068 Ω | 0.544 V/A | 0.54 V | 0.82 V |
+| `R100` | 0.100 Ω | 0.800 V/A | 0.80 V | 1.20 V |
+
+A factor of two sits between the top and bottom rows. Guessing it is how
+motors cook.
+
+**Procedure:** motor **disconnected**, VDD on (from the Arduino), motor supply
+connected. Measure DC volts between the **trimpot wiper** — or the metal pot
+body, which is the same node on most carriers — and **GND**. Turn the pot until
+VREF matches the table, then power down before plugging the motor in.
+
+Set it to the motor's rated phase current *or below*. For this axis start at
+**60–70 % of the rating**: a lens on a leadscrew needs very little torque, and
+every watt you do not put in is a watt that does not end up as drift in an
+optical mount. If it skips steps, raise it.
+
+### Supplies, and the two things that kill these boards
+
+* **VBB (motor supply) operating range is 8–35 V [DS]**, 35 V absolute max.
+  **A 5 V or 6 V supply will not run it** — this catches people. Use 12 V or
+  24 V.
+* **Output current is ±2 A absolute max [DS]**, with overcurrent protection
+  tripping at ≥ 2.1 A and thermal shutdown at 165 °C [DS]. In practice a bare
+  carrier handles roughly 1 A before it wants a heatsink and some air.
+* **A 100 µF electrolytic across VMOT/GND, physically close to the driver,
+  before you first apply motor power.** The datasheet asks for a bulk capacitor
+  in parallel with a ceramic one, ceramic nearest the pins [DS]; on a carrier
+  fed through long leads, lead inductance can ring VMOT past the 35 V maximum
+  at power-up. Not optional.
+* **Never plug or unplug a motor while the driver is powered.** The datasheet
+  does not discuss it; every carrier vendor warns about it, and it destroys
+  A4988s reliably.
+
+### These drivers under an optical bench
+
+The A4988 regulates current with fixed off-time PWM in mixed decay [DS]. That
+is audible, and what is audible is also mechanical. Two things already help:
+the firmware de-energises the motors between moves by default
+(`HOLD_WHEN_IDLE 0`), and you can run the current low. If the lens turns out to
+be sensitive to the drivers *while moving*, a TMC2209 is a drop-in on the same
+carrier footprint and is dramatically quieter — worth knowing, not worth
+pre-empting. Measure first.
 
 ---
 
@@ -261,6 +327,11 @@ anode**, which is what works directly from a 5 V Arduino:
 Do this **with the motors uncoupled from the lens**. Half of it is checking
 that the things meant to stop the stage actually do.
 
+0. **Drivers, with no motor plugged in.** Read `RS` off the sense resistors
+   and set VREF per the table above. Confirm the **RESET–SLEEP** jumper (or
+   that SLEEP measures ~5 V). Confirm **MS1 and MS2 are tied to 5 V** and MS3
+   is open, for 1/8. Fit the **100 µF across VMOT/GND**. Only then power down
+   and plug the motors in.
 1. **Switches before motors.** Upload, open the serial monitor at **115200**,
    send `status`. The `sw` field is four digits: `z1min z1max z2min z2max`.
    With nothing pressed it should read `0000`. Press each switch by hand and
@@ -272,8 +343,8 @@ that the things meant to stop the stage actually do.
    re-upload. (If it finds nothing: `ERR home no_min_switch`.)
 3. **Scale.** `home`, then `move 5`. Measure the actual travel with a dial
    indicator. If it moves twice as far as asked, `LEAD_MM_PER_REV` is wrong; if
-   it moves by a neat factor of 2, 4 or 8, `MICROSTEPS` does not match the
-   driver jumpers.
+   it moves by a neat factor of 2, 4 or 8, `MICROSTEPS` does not match how MS1,
+   MS2 and MS3 are actually wired.
 4. **Range.** `travel` drives each axis to its MAX switch and reports the
    usable range. Put those numbers in `DEFAULT_TRAVEL_MM` if you would rather
    not re-measure after every reset.
