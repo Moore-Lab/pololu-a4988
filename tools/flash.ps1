@@ -67,7 +67,7 @@ if (-not $CheckOnly) {
   Write-Host ("== upload   {0}  (USB {1})" -f $port, $megas[0].Id)
   & $Cli upload --fqbn $fqbn --port $port $sketch
   if ($LASTEXITCODE -ne 0) {
-    throw "upload failed (exit $LASTEXITCODE). Is a serial monitor or another program holding $port open?"
+    throw "upload failed (exit $LASTEXITCODE). Is something holding $port open? The DAQ panel does: press release on the lens card of its Tip-tilt tab first."
   }
 }
 

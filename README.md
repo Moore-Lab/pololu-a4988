@@ -1,8 +1,12 @@
-# xsphere-lens-z
+# pololu-a4988
 
-Two stepper motors (**Z1** and **Z2**) driving **one lens along one axis**, with
-**two limit switches per motor**, on an **Arduino Mega 2560**. Firmware in
-[`firmware/lens_z/lens_z.ino`](firmware/lens_z/lens_z.ino).
+The **lens Z stage** of the xsphere rig: two stepper motors (**Z1** and **Z2**)
+driving **one lens along one axis**, with **two limit switches per motor**, on
+**Pololu A4988** carriers and an **Arduino Mega 2560**. Firmware in
+[`firmware/lens_z/lens_z.ino`](firmware/lens_z/lens_z.ino); the Python link the
+DAQ uses in [`a4988/`](a4988/). A submodule of
+[xsphere-daq](https://github.com/Moore-Lab/xsphere-daq), whose Tip-tilt tab
+carries the stage's controls.
 
 **Wiring schematic and bench checklist:** [`docs/wiring.html`](docs/wiring.html)
 (open it in a browser; four figures, every Mega pin, and the checks to run
@@ -11,11 +15,13 @@ before motor power goes on).
 Derived from [Moore-Lab/Arduino-Stepper-Motors](https://github.com/Moore-Lab/Arduino-Stepper-Motors)
 (`06_17_2025.ino`), which drove an x/y stage with one switch per axis.
 
-> **Built and flashed from the command line** with `tools/flash.ps1` (see
-> *Building and flashing*). The sketch compiles with no warnings under
-> `--warnings all`, and on the Mega it boots and answers. No motor has moved
-> under it yet: work through the bring-up below with the motors uncoupled from
-> the lens.
+> **Status, 2026-11-24.** Firmware `lens_z 1.3` is on the Mega, built for one
+> motor (`Z2_FITTED 0`: Z2 is not wired yet). Z1 drives a Newport 423 stage
+> through its SM micrometer (0.5 mm per turn, so 6400 microsteps per mm,
+> 0.156 µm each). Both Z1 switches pass the press test and Z1 has homed. The
+> first homing tripped MIN 6.5 mm earlier on the fast pass than on the slow
+> one; that is not explained yet (see the session log), so check the zero
+> against the micrometer before trusting absolute positions.
 
 ---
 
@@ -517,20 +523,57 @@ With `HOLD_WHEN_IDLE 1` you have decided the axis *can* be back-driven, so
 
 ---
 
-## Later, in the DAQ
+## The Python link: `a4988`
 
-The protocol above is deliberately the shape the other subsystems use — one
-line in, one terminal line out, no unsolicited chatter — so a `LensZLink`
-class mounting at `/lens` would be a thin wrapper over `pyserial` plus the
-same session/lock pattern as `xsphere-rigol-dg1022z`.
+```python
+import sys; sys.path.insert(0, r"path\to\pololu-a4988")
+from a4988 import LensZ
+lz = LensZ("auto")        # the one Mega 2560 on USB, found by USB ID (registry; opens nothing else)
+lz.open()                 # DTR held low: the board is NOT reset, homing survives
+lz.status()               # {"pos": {"z1": 0.5, "z2": 0.0}, "homed": True, "moving": False, "sw": ..., "soft": ...}
+lz.home(); lz.wait()      # motion commands return at once ("HOMING"); wait() polls until idle
+lz.move(3.0); lz.wait()   # mm FROM THE MIN SWITCH
+lz.jog("z1", -0.010)      # by 10 um
+lz.stop()
+lz.close()                # the board carries on; a move in progress finishes
+```
 
-Two things to carry over from the generator work when that happens:
+**Coordinates are mm from the MIN switch**: homing zeroes each axis where MIN
+trips on the slow approach, + runs toward MAX, and homing parks at 0.5 mm (the
+soft minimum). Before homing the count is only "since power-up", and the board
+refuses absolute moves.
 
-* **opening the serial port resets the board.** The link must re-`home` after
-  any reconnect, and must never assume the position survived. (If that becomes
-  a nuisance, the Mega's auto-reset can be defeated with a ~10 µF capacitor
-  from RESET to GND — but then the bootloader cannot be reached either, so
-  uploading means pulling it off again. Re-homing is the cheaper habit;)
-* **decide what a limit trip means to the DAQ** before wiring it in. On the
-  generator the equivalent question — what is the safe state — turned out to be
-  the whole design.
+**Opening the port does not reset the board.** The Mega's USB chip resets it
+through DTR, so `a4988.transport` opens the port with DTR and RTS never
+asserted (Win32 directly, or pyserial when installed; adapted from
+thorlabs-mc2000b's transport). Checked on the rig 2026-11-24: state set before
+closing (`enable`) was still there after reopening, and no `READY` arrived.
+`tools/flash.ps1` still resets the board on purpose, to check new firmware.
+
+**Outcomes arrive by themselves.** A motion command's first reply is
+`MOVING` / `HOMING` / `MEASURING`; its outcome (`OK POS`, `OK HOMED`,
+`OK TRAVEL`, `ERR limit ...`, `ERR home ...`) comes later as its own line,
+often in the middle of a `status` exchange. `LensZ.command` sorts every line:
+the reply it waits for ends the exchange, outcomes go to `lz.events` (and
+`lz.on_event`). Refusals raise `a4988.Refused`, whose text says what to do
+(`explain()`).
+
+`a4988.SimBoard` is the firmware in software (homing phases, limits, travel,
+stop, the same lines), on a real or a manual clock: the tests and the DAQ's
+`--lens sim` use it. Tests: `python -m pytest tests` (hardware-free).
+
+## In the DAQ
+
+The xsphere-daq panel (`xsphere_daq/lens.py`) opens the Mega at start-up
+(`--lens auto`, the default; `sim`, `off`, or a COM port), polls it, and puts
+its controls on the **Tip-tilt tab**: position in mm from MIN, the switches,
+arrows in µm steps, a position box, home, measure travel, stop, speed. The API
+is `/lens/api` (`state`, `move {z}`, `step {axis, mm}`, `home`, `travel`,
+`stop`, `speed {mm_s}`, `release`, `reconnect`); every command and outcome is
+logged in `D:\xsphere-data\lens\<day>.jsonl`, and each acquisition's manifest
+records the position. Connecting moves nothing; shutting down only lets the
+port go.
+
+**To reflash while the panel runs**, press **release** on the lens card first
+(the port is exclusive), run `tools/flash.ps1` with the motor supply off, then
+**reconnect**. The flash resets the board, so home again afterwards.

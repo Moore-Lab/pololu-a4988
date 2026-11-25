@@ -1,0 +1,5 @@
+# Nothing is required to talk to the board: on Windows a4988 opens the port
+# through kernel32 (ctypes). pyserial is used instead when it is installed.
+# pyserial
+# For the tests:
+# pytest

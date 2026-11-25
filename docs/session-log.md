@@ -1,7 +1,7 @@
-# xsphere-lens-z — Development Session Log
+# pololu-a4988 — Development Session Log
 
 Running, chronological record of development for **this repo only**
-(`xsphere-lens-z`, the two-motor lens axis). It is meant to sit alongside
+(`pololu-a4988`, the two-motor lens axis; `xsphere-lens-z` until 2026-11-24). It is meant to sit alongside
 `xsphere-daq` the way the other instrument repos do; changes to the parent's
 panel, shell, dashboard or launcher are logged in *that* repo's
 `docs/session-log.md` — write to the log of the repo you're modifying.
@@ -13,6 +13,43 @@ Newest entries first. Keep entries short and factual; convert relative dates to
 absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
+
+## 2026-11-24 (night) — Into the DAQ; renamed pololu-a4988, pushed, a submodule
+
+Lucas: bring the stage into the DAQ, coordinates relative to MIN, controls on
+the Tip-tilt tab; a standalone repo named after the driver, used as a submodule.
+
+- **Renamed** `xsphere-lens-z` to `pololu-a4988` (the folder, the README, the
+  session log, the wiring page). The firmware keeps its name, `lens_z`.
+- **`a4988/` package**: `LensZ` (the link), `SimBoard` (the firmware in
+  software), `find_megas` (USB ID from the registry: `2341:0042` on COM4), and a
+  transport adapted from thorlabs-mc2000b's that opens the port with DTR low.
+- **No reset on open, checked on the Mega**: `enable`, close, reopen: motors
+  still on, no `READY`; then `disable`. The board read `homed 0` before this
+  check, so it restarted at some point after the evening's homing (power or
+  USB cycle; not from this link).
+- **Outcome lines** (`OK POS`, `OK HOMED`, `ERR limit ...`) are sorted out of
+  any exchange they land in, into `events`; refusals raise `Refused` with the
+  reason in words.
+- Tests: 13, hardware-free, against `SimBoard` on a manual clock.
+- The DAQ side (`xsphere_daq/lens.py`, `static/lensz.js`, the Tip-tilt card,
+  `--lens`) is logged in xsphere-daq's own session log.
+
+## 2026-11-24 (evening) — 1.3 on the Mega; switches pass; first homing
+
+- Flashed **1.3** (`Z2_FITTED 0`: one motor until Z2 is wired), motor supply off.
+- **Press test** on Z1: MIN and MAX each flipped only their own digit and
+  released cleanly. `sw 0011` at rest is Z2's empty inputs reading tripped.
+- **First `home`** with the motor supply on (VREF set by Lucas), the port held
+  without reset, `status` at 1 Hz: `OK HOMED POS 0.5000 0.0000` after 145 s.
+  **Unexplained:** the fast pass tripped MIN at about -2.3 mm (count from
+  power-up), then the slow pass, which should re-touch MIN after the 0.5 mm
+  back-off, ran on to about -8.4 mm before MIN tripped again. Either the first
+  trip was false (the switch line opened for over 2 ms with the carriage away
+  from it: a loose wire, or pickup), or the motor stopped turning on the
+  0.05 mm/s pass while counting on (a stall, or the coupler slipping). Not
+  settled: compare the micrometer with the panel's position, and home again
+  from about 5 mm, where a healthy run trips both passes near -5 mm.
 
 ## 2026-11-24 (late night) — First real build and flash, from the command line
 
