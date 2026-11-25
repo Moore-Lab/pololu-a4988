@@ -433,6 +433,17 @@ that the things meant to stop the stage actually do.
 
 ---
 
+## One motor for now: `Z2_FITTED`
+
+Until Z2's driver, motor and switches are connected, the sketch is built with
+`#define Z2_FITTED 0`. Everything then runs on Z1 alone. `home` and `travel`
+use Z1 only, and `move <mm>` moves Z1. Z2's switch inputs, which read tripped
+while unplugged, are ignored. The READY banner says `axes=1` and `status` ends
+`axes 1`, so the mode is always visible. Once Z2 is wired, set `Z2_FITTED 1`
+and reflash.
+
+---
+
 ## Building and flashing
 
 From the repo, in PowerShell:
@@ -472,8 +483,8 @@ first (`MOVING` / `HOMING` / `MEASURING`), so read lines until `OK` or `ERR`.
 
 | command | does |
 |---|---|
-| `ping` | `OK lens_z 1.2` |
-| `status` | `OK STATUS pos ...`: positions, the four switches, homed/moving/motors, soft limits |
+| `ping` | `OK lens_z 1.3` |
+| `status` | `OK STATUS pos ...`: positions, the four switches, homed/moving/motors, soft limits, and `axes 1` or `axes 2` |
 | `home` | both axes to their MIN switches; sets zero. **Required before any move.** Works from anywhere, including sitting on MAX |
 | `travel` | measures MIN→MAX on each axis and sets the soft limits |
 | `move <mm>` | both axes to the same absolute position — the usual case |
@@ -486,7 +497,8 @@ first (`MOVING` / `HOMING` / `MEASURING`), so read lines until `OK` or `ERR`.
 Errors: `ERR busy`, `ERR not_homed`, `ERR soft_limit <axis> <min> <max>`,
 `ERR on_limit <axis><min|max>`, `ERR limit <axis><min|max> at POS ...`,
 `ERR home <reason>`, `ERR unknown_command`, `ERR line_too_long` (over 63
-characters).
+characters), `ERR not_fitted z2` (a two-axis `move` or a `jog z2` while only Z1 is
+wired).
 
 `ERR home` reasons:
 

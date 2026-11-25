@@ -128,6 +128,9 @@ try {
     if ($cmd -eq 'status' -and $reply -match ' sw ([01])([01])([01])([01]) ') {
       Write-Host ("   switches: Z1 MIN {0}  Z1 MAX {1}  Z2 MIN {2}  Z2 MAX {3}   (1 = tripped, or unplugged)" -f $Matches[1], $Matches[2], $Matches[3], $Matches[4])
     }
+    if ($cmd -eq 'status' -and $reply -match ' axes 1$') {
+      Write-Host "   one-motor build (Z2_FITTED 0): Z2 and its switches are ignored"
+    }
   }
 } finally {
   $sp.Close()

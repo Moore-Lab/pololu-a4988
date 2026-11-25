@@ -36,7 +36,7 @@
 #include <MultiStepper.h>
 
 #define FIRMWARE_NAME "lens_z"
-#define FIRMWARE_VERSION "1.2"
+#define FIRMWARE_VERSION "1.3"
 
 // ===========================================================================
 //  Pins
@@ -118,6 +118,16 @@
 // MIN switch. Check this before anything else; see the bring-up in README.md.
 #define Z1_DIR_INVERT 0
 #define Z2_DIR_INVERT 0
+
+// ---------------------------------------------------------------------------
+// Is the second motor wired yet? With 0, everything runs on Z1 alone: Z2 is
+// never homed or stepped, `move <mm>` moves Z1 only, and Z2's switch inputs
+// (which read tripped when nothing is plugged in, by design) are ignored. The
+// READY banner and `status` report `axes 1` so the mode is never a surprise.
+// Set this to 1, and reflash, once Z2's driver, motor and both switches are
+// connected.
+// ---------------------------------------------------------------------------
+#define Z2_FITTED 0
 
 // ===========================================================================
 //  Mechanics
@@ -249,6 +259,8 @@ Endstop sw_max[NAXIS];
 const char *axis_name[NAXIS] = {"z1", "z2"};
 
 bool homed[NAXIS] = {false, false};
+const bool fitted[NAXIS] = {true, Z2_FITTED != 0};
+
 float travel_mm[NAXIS] = {DEFAULT_TRAVEL_MM, DEFAULT_TRAVEL_MM};
 long soft_min[NAXIS];                    // steps; set by home()
 long soft_max[NAXIS];
@@ -295,6 +307,16 @@ bool max_at_start[NAXIS];
 bool retreat_after_measure = false;
 
 // ---------------------------------------------------------------------------
+// Homed means every FITTED axis is homed. An axis that is not fitted never
+// moves, so it needs no homing. (Defined down here, after the enums: the
+// Arduino builder puts its generated prototypes above the FIRST function in
+// the file, and enter_phase(int, Phase) needs Phase declared by then.)
+bool all_homed() {
+  for (int i = 0; i < NAXIS; i++)
+    if (fitted[i] && !homed[i]) return false;
+  return true;
+}
+
 float sps(float mm_s) {
   float v = mm_s * STEPS_PER_MM;
   return v > MAX_STEP_RATE_SPS ? MAX_STEP_RATE_SPS : v;
@@ -373,6 +395,8 @@ void setup() {
   Serial.print(STEPS_PER_MM, 1);
   Serial.print(" max_mm_s=");
   Serial.print(MAX_STEP_RATE_SPS / STEPS_PER_MM, 3);
+  Serial.print(" axes=");
+  Serial.print(Z2_FITTED ? 2 : 1);
   Serial.println(" not_homed");
 }
 
@@ -403,6 +427,9 @@ void poll_serial() {
       }
       rx_len = 0;
       rx_overflow = false;
+    } else if (c < ' ' || c > '~') {
+      // Not printable: line noise, or the stray byte a USB adapter can hand
+      // over when the port is opened. Dropping it keeps the command intact.
     } else if (rx_len < RX_MAX - 1) {
       rx_buf[rx_len++] = c;
     } else {
@@ -492,7 +519,7 @@ void start_home() {
   // fault: almost always an unplugged cable, which the NC wiring reports as
   // tripped on purpose. Refuse before anything moves.
   for (int i = 0; i < NAXIS; i++) {
-    if (sw_min[i].tripped() && sw_max[i].tripped()) {
+    if (fitted[i] && sw_min[i].tripped() && sw_max[i].tripped()) {
       Serial.print("ERR home switch_fault ");
       Serial.println(axis_name[i]);
       return;
@@ -500,6 +527,7 @@ void start_home() {
   }
   set_motors(true);
   for (int i = 0; i < NAXIS; i++) {
+    if (!fitted[i]) { phase[i] = PH_DONE; continue; }
     max_at_start[i] = sw_max[i].tripped();
     homed[i] = false;
     phase[i] = sw_min[i].tripped() ? PH_CLEAR : PH_FAST;
@@ -595,7 +623,7 @@ void run_home() {
 
   halt_all();
   mode = M_IDLE;
-  bool ok = homed[Z1] && homed[Z2];
+  bool ok = all_homed();
   if (!HOLD_WHEN_IDLE) set_motors(false);
   if (ok) {
     Serial.print("OK HOMED ");
@@ -617,16 +645,16 @@ void run_home() {
 // stage is built, then read the numbers back with `status` and put them in
 // DEFAULT_TRAVEL_MM if you want them without re-measuring.
 void start_measure() {
-  if (!homed[Z1] || !homed[Z2]) { Serial.println("ERR not_homed"); return; }
+  if (!all_homed()) { Serial.println("ERR not_homed"); return; }
   set_motors(true);
   for (int i = 0; i < NAXIS; i++) {
-    phase[i] = sw_max[i].tripped() ? PH_DONE : PH_SLOW;
+    phase[i] = (!fitted[i] || sw_max[i].tripped()) ? PH_DONE : PH_SLOW;
     phase_start_pos[i] = axis[i]->currentPosition();
     // Seek at the normal move speed, not the homing crawl: this only has to
     // be good to a few microns (the stop is abrupt and may drop a step or
     // two), and HOME_SLOW_MM_S would take eight minutes over 25 mm.
     axis[i]->setSpeed(sps(move_mm_s));
-    if (phase[i] == PH_DONE) {
+    if (phase[i] == PH_DONE && fitted[i]) {
       travel_mm[i] = steps_to_mm(axis[i]->currentPosition());
       soft_max[i] = mm_to_steps(travel_mm[i] - MAX_CLEARANCE_MM);
     }
@@ -656,7 +684,7 @@ void run_measure() {
   bool ok = phase[Z1] == PH_DONE && phase[Z2] == PH_DONE;
   // Retreat off the MAX switches so the axes are not left sitting on a limit.
   if (ok) {
-    long t[NAXIS] = {soft_max[Z1], soft_max[Z2]};
+    long t[NAXIS] = {soft_max[Z1], fitted[Z2] ? soft_max[Z2] : stepper2.currentPosition()};
     for (int i = 0; i < NAXIS; i++) axis[i]->setMaxSpeed(sps(move_mm_s));
     pair.moveTo(t);
     retreat_after_measure = true;
@@ -705,7 +733,7 @@ void send_status() {
   Serial.print(sw_min[Z2].tripped() ? "1" : "0");
   Serial.print(sw_max[Z2].tripped() ? "1" : "0");
   Serial.print(" homed ");
-  Serial.print(homed[Z1] && homed[Z2] ? "1" : "0");
+  Serial.print(all_homed() ? "1" : "0");
   Serial.print(" moving ");
   Serial.print(mode == M_IDLE ? "0" : "1");
   Serial.print(" motors ");
@@ -717,15 +745,18 @@ void send_status() {
   Serial.print(" ");
   Serial.print(steps_to_mm(soft_min[Z2]), 3);
   Serial.print(" ");
-  Serial.println(steps_to_mm(soft_max[Z2]), 3);
+  Serial.print(steps_to_mm(soft_max[Z2]), 3);
+  Serial.print(" axes ");
+  Serial.println(Z2_FITTED ? 2 : 1);
 }
 
 bool begin_move(float z1_mm, float z2_mm) {
   if (mode != M_IDLE) { Serial.println("ERR busy"); return false; }
-  if (!homed[Z1] || !homed[Z2]) { Serial.println("ERR not_homed"); return false; }
+  if (!all_homed()) { Serial.println("ERR not_homed"); return false; }
 
   long t[NAXIS] = {mm_to_steps(z1_mm), mm_to_steps(z2_mm)};
   for (int i = 0; i < NAXIS; i++) {
+    if (!fitted[i]) { t[i] = axis[i]->currentPosition(); continue; }
     if (t[i] < soft_min[i] || t[i] > soft_max[i]) {
       Serial.print("ERR soft_limit ");
       Serial.print(axis_name[i]);
@@ -793,6 +824,7 @@ void handle(String cmd) {
       float z = token(cmd, 1).toFloat();
       begin_move(z, z);
     } else if (n == 3) {
+      if (!fitted[Z2]) { Serial.println("ERR not_fitted z2"); return; }
       begin_move(token(cmd, 1).toFloat(), token(cmd, 2).toFloat());
     } else {
       Serial.println("ERR usage move <mm> | move <z1_mm> <z2_mm>");
@@ -806,6 +838,7 @@ void handle(String cmd) {
     float d = token(cmd, 2).toFloat();
     float a = steps_to_mm(stepper1.currentPosition());
     float b = steps_to_mm(stepper2.currentPosition());
+    if (which == "z2" && !fitted[Z2]) { Serial.println("ERR not_fitted z2"); return; }
     if (which == "z1") begin_move(a + d, b);
     else if (which == "z2") begin_move(a, b + d);
     else if (which == "both") begin_move(a + d, b + d);
