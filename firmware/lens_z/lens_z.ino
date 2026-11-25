@@ -36,7 +36,7 @@
 #include <MultiStepper.h>
 
 #define FIRMWARE_NAME "lens_z"
-#define FIRMWARE_VERSION "1.1"
+#define FIRMWARE_VERSION "1.2"
 
 // ===========================================================================
 //  Pins
@@ -693,7 +693,9 @@ int token_count(String &s) {
 }
 
 void send_status() {
-  Serial.print("STATUS pos ");
+  // Starts with OK like every other reply, so a reader can always wait for
+  // OK/ERR. (1.1 answered "STATUS ...", which broke that rule.)
+  Serial.print("OK STATUS pos ");
   Serial.print(steps_to_mm(stepper1.currentPosition()), 4);
   Serial.print(" ");
   Serial.print(steps_to_mm(stepper2.currentPosition()), 4);

@@ -11,10 +11,11 @@ before motor power goes on).
 Derived from [Moore-Lab/Arduino-Stepper-Motors](https://github.com/Moore-Lab/Arduino-Stepper-Motors)
 (`06_17_2025.ino`), which drove an x/y stage with one switch per axis.
 
-> **Not yet built or run.** There is no Arduino toolchain on the rig PC, so the
-> sketch has been reviewed and structurally checked but **not compiled**.
-> Build it in the Arduino IDE before trusting any of it, and work through the
-> bring-up below with the motors uncoupled from the lens.
+> **Built and flashed from the command line** with `tools/flash.ps1` (see
+> *Building and flashing*). The sketch compiles with no warnings under
+> `--warnings all`, and on the Mega it boots and answers. No motor has moved
+> under it yet: work through the bring-up below with the motors uncoupled from
+> the lens.
 
 ---
 
@@ -432,6 +433,36 @@ that the things meant to stop the stage actually do.
 
 ---
 
+## Building and flashing
+
+From the repo, in PowerShell:
+
+```powershell
+.\tools\flash.ps1                # build, flash, check that it answers
+.\tools\flash.ps1 -CompileOnly   # build only; touches no hardware
+```
+
+It uses Arduino's `arduino-cli`, unzipped to `%USERPROFILE%\tools\arduino-cli\`
+(no installer, nothing on PATH; set `ARDUINO_CLI` to use another copy). The
+script finds the Mega by its USB ID (`2341:0042`), never by COM number, and
+refuses unless exactly one is plugged in. This PC also has the tip-tilt piezo
+controller and the K-Cube adapters on serial ports, and avrdude will talk its
+bootloader protocol at whatever port it is handed. After the upload the script
+resets the board, waits for `READY`, and checks `ping` and `status`.
+
+**Motor supply off while flashing.** The Mega's pins float during the
+bootloader, and the A4988 carriers enable their outputs when ENABLE floats.
+
+Built with arduino-cli 1.6.0, `arduino:avr` 1.8.8 (avr-gcc 7.3.0, avrdude
+8.0.0) and AccelStepper 1.64. On another machine:
+
+```powershell
+arduino-cli core install arduino:avr
+arduino-cli lib install AccelStepper
+```
+
+---
+
 ## Serial protocol
 
 115200 baud; a line ends at CR or LF, so any Serial Monitor setting except
@@ -441,8 +472,8 @@ first (`MOVING` / `HOMING` / `MEASURING`), so read lines until `OK` or `ERR`.
 
 | command | does |
 |---|---|
-| `ping` | `OK lens_z 1.1` |
-| `status` | positions, the four switches, homed/moving/motors, soft limits |
+| `ping` | `OK lens_z 1.2` |
+| `status` | `OK STATUS pos ...`: positions, the four switches, homed/moving/motors, soft limits |
 | `home` | both axes to their MIN switches; sets zero. **Required before any move.** Works from anywhere, including sitting on MAX |
 | `travel` | measures MIN→MAX on each axis and sets the soft limits |
 | `move <mm>` | both axes to the same absolute position — the usual case |

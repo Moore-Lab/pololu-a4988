@@ -157,7 +157,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <main class="wrap">
 
 <header>
-  <div class="eyebrow">xsphere-lens-z · firmware lens_z 1.1 · Arduino Mega 2560 · A4988 · PK243M-02BA</div>
+  <div class="eyebrow">xsphere-lens-z · firmware lens_z 1.2 · Arduino Mega 2560 · A4988 · PK243M-02BA</div>
   <h1>Lens Z wiring</h1>
   <p>Two A4988 carriers drive Z1 and Z2, both pushing one lens along one axis, with a MIN and a MAX limit switch on each motor. Check the build against the figures, then work through the checklist at the bottom before motor power goes on.</p>
   <div class="warn" role="note">
@@ -697,7 +697,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <li><label><input type="checkbox" id="b1"><span class="txt"><strong>VDD reads about 5 V</strong> to GND on each driver.</span></label></li>
         <li><label><input type="checkbox" id="b2"><span class="txt"><strong>SLP reads about 5 V</strong> to GND on each driver.<span>If it reads 0 V, the carrier doesn't pull it up. Replace the jumper with 10 kΩ from RST and from SLP to VDD.</span></span></label></li>
         <li><label><input type="checkbox" id="b7"><span class="txt"><strong>If you fitted the 10 kΩ:</strong> hold the Mega's RESET button and measure ENABLE to GND.<span>It should read above 3.5 V, which means the drivers stay off while the Mega restarts.</span></span></label></li>
-        <li><label><input type="checkbox" id="b3"><span class="txt"><strong>Upload lens_z 1.1.</strong><span>Serial Monitor at 115200 baud, line ending “Newline”. Send <code>ping</code> and expect <code>OK lens_z 1.1</code>.</span></span></label></li>
+        <li><label><input type="checkbox" id="b3v12"><span class="txt"><strong>Flash lens_z 1.2.</strong><span>Run <code>tools/flash.ps1</code> from the repo. It builds, flashes the Mega by its USB ID, and checks that the board answers <code>ping</code> with <code>OK lens_z 1.2</code>. In the Serial Monitor, use 115200 baud and line ending “Newline”.</span></span></label></li>
         <li><label><input type="checkbox" id="b4"><span class="txt"><strong><code>status</code> shows <code>sw 0000</code>.</strong><span>The digits are z1min, z1max, z2min, z2max.</span></span></label></li>
         <li><label><input type="checkbox" id="b5"><span class="txt"><strong>Press each switch by hand.</strong><span>The right digit goes to 1 while you hold it. A wrong digit means swapped wires.</span></span></label></li>
         <li><label><input type="checkbox" id="b6"><span class="txt"><strong>Unplug one switch.</strong><span>Its digit reads 1. That is the fail-safe working. Plug it back in.</span></span></label></li>
@@ -721,7 +721,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 </section>
 
 <footer>
-  <div>Firmware <code>lens_z 1.1</code> has not yet been compiled. Build it in the Arduino IDE (AccelStepper library) before relying on it.</div>
+  <div>Firmware <code>lens_z 1.2</code> builds cleanly and is on the Mega. To rebuild and reflash, run <code>tools/flash.ps1</code> with the motor supply off.</div>
   <div>Figures marked against the Allegro A4988 datasheet. Source: <code>xsphere-lens-z/docs/wiring.html</code></div>
 </footer>
 

@@ -14,6 +14,51 @@ absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
 
+## 2026-11-24 (late night) — First real build and flash, from the command line
+
+Lucas asked for the firmware to be compiled and flashed from the command line,
+by me. He approved the downloads and confirmed the motor supply was off.
+
+**Toolchain:**
+- arduino-cli 1.6.0, the official zip from github.com/arduino/arduino-cli.
+  Its SHA-256 matched the release's checksum file. The exe itself is not
+  Authenticode-signed (Arduino doesn't sign the zip builds). Unzipped to
+  `%USERPROFILE%/tools/arduino-cli/`: no installer, nothing on PATH.
+- `arduino:avr` 1.8.8, with avr-gcc 7.3.0 and avrdude 8.0.0.
+- AccelStepper 1.64.
+
+**First compile:** clean. With `--warnings all` the sketch and AccelStepper
+give no warnings; the only four come from the Arduino core's `new.cpp`. The
+build is 18.5 KB of 254 KB flash and 1.2 KB of 8 KB RAM.
+
+**`tools/flash.ps1`:** compile, find the Mega by USB ID (2341:0042, on COM4
+today), upload, reset, then check `ping` and `status`. It refuses unless
+exactly one Mega is present: COM3 (the MDT693A), COM9 and COM10 also live on
+this PC. `-CompileOnly` builds without touching hardware; `-CheckOnly`
+skips the build and the flash.
+
+What the first runs taught:
+- **Stale bytes on open.** The USB chip handed over 39 bytes of the previous
+  banner in the first ~30 ms, with no newline. The reset's own READY arrived at
+  ~950 ms, after the bootloader. .NET `ReadLine` with a timeout mangled the
+  fragment and the line merged together (characters went missing mid-line).
+  The script now discards for 150 ms and splits lines itself from
+  `ReadExisting`. A timestamped raw-byte trace is what showed this.
+- **Firmware 1.2: `status` now answers `OK STATUS ...`.** 1.1 answered
+  `STATUS ...`, which broke the protocol's one-OK/ERR-line-per-command rule.
+  Any reader waiting for OK/ERR, including the future DAQ link, would have
+  hung on it.
+
+**On the hardware (motor supply off):**
+- the board boots, `ping` → `OK lens_z 1.2`;
+- `status` shows `sw 1111`: all four switches read tripped, so they are
+  unplugged, on NO rather than NC, or COM is not grounded;
+- `home` → `ERR home switch_fault z1` and `move 1` → `ERR not_homed`, with
+  `motors 0` throughout. The fail-safe blocks motion before anything is
+  energised.
+
+---
+
 ## 2026-11-24 (late) — Full two-channel schematic; firmware names match it
 
 Lucas: the limit switches were missing from the schematic, and he has two
