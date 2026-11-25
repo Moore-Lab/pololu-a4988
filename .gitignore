@@ -1,0 +1,13 @@
+# Arduino IDE / arduino-cli build output
+build/
+*.hex
+*.elf
+*.eep
+
+# Python (host-side driver, when it arrives)
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Claude Code local tooling (as in the sibling repos)
+.claude/
