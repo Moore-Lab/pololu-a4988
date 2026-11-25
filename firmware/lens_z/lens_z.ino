@@ -36,7 +36,7 @@
 #include <MultiStepper.h>
 
 #define FIRMWARE_NAME "lens_z"
-#define FIRMWARE_VERSION "1.0"
+#define FIRMWARE_VERSION "1.1"
 
 // ===========================================================================
 //  Pins
@@ -134,7 +134,7 @@ const float STEPS_PER_MM = STEPS_PER_REV * MICROSTEPS / LEAD_MM_PER_REV;
 // 1/16 gives 78 nm steps, which is far below anything the mechanics can
 // actually repeat, and costs a factor of 2 in speed against 1/8. If the stage
 // still feels slow, drop to 1/4 — 313 nm is still well under the positioning
-// error of a leadscrew stage. Change MICROSTEPS here AND the driver jumpers.
+// error of a leadscrew stage. Change MICROSTEPS here AND the MS1/MS2/MS3 wiring.
 // ---------------------------------------------------------------------------
 #define MAX_STEP_RATE_SPS 4000.0f
 
@@ -147,6 +147,7 @@ const float STEPS_PER_MM = STEPS_PER_REV * MICROSTEPS / LEAD_MM_PER_REV;
 #define HOME_CLEARANCE_MM 0.50f  // where the axis parks after homing = soft min
 #define MAX_CLEARANCE_MM 0.50f   // soft max sits this far inside the MAX switch
 #define HOME_SEEK_MM 60.0f       // give up if no switch within this distance
+#define HOME_CLEAR_MAX_MM 3.0f   // a switch releases within ~1 mm; longer = fault
 #define DEFAULT_TRAVEL_MM 25.0f  // assumed range until `travel` measures it
 
 // ===========================================================================
@@ -255,6 +256,16 @@ const char *fail_reason = "";
 
 bool motors_on = false;
 
+// The speed for ordinary moves. A variable rather than the #define so that the
+// `speed` command lasts: in 1.0 every move reset maxSpeed from the #define, so
+// `speed` was overwritten before it could do anything.
+float move_mm_s = MOVE_SPEED_MM_S;
+
+// Was this axis already sitting on its MAX switch when homing began? Then
+// MAX being tripped is where it started, not evidence that it ran the wrong
+// way. Cleared as soon as the axis moves off it.
+bool max_at_start[NAXIS];
+
 // The retreat off the MAX switches at the end of `travel` is an ordinary
 // coordinated move, but it belongs to the travel command and must not post an
 // OK of its own -- one terminal line per command.
@@ -322,7 +333,7 @@ void setup() {
   stepper2.setPinsInverted(Z2_DIR_INVERT, false, false);
 
   for (int i = 0; i < NAXIS; i++) {
-    axis[i]->setMaxSpeed(sps(MOVE_SPEED_MM_S));
+    axis[i]->setMaxSpeed(sps(move_mm_s));
     axis[i]->setAcceleration(ACCEL_MM_S2 * STEPS_PER_MM);
     axis[i]->setCurrentPosition(0);
     soft_min[i] = mm_to_steps(HOME_CLEARANCE_MM);
@@ -345,14 +356,41 @@ void setup() {
 // ===========================================================================
 //  loop
 // ===========================================================================
+// Commands are gathered a byte at a time. 1.0 used readStringUntil(), which
+// blocks the loop -- and with it every step and every switch read -- until the
+// newline arrives, or for a full second if it never does (the Serial
+// Monitor's "No line ending"). Either CR or LF ends a line here, so every
+// Serial Monitor setting except "No line ending" works.
+#define RX_MAX 64
+char rx_buf[RX_MAX];
+uint8_t rx_len = 0;
+bool rx_overflow = false;
+
+void poll_serial() {
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\n' || c == '\r') {
+      if (rx_overflow) {
+        Serial.println("ERR line_too_long");
+      } else if (rx_len) {
+        rx_buf[rx_len] = 0;
+        String line(rx_buf);
+        line.trim();
+        if (line.length()) handle(line);
+      }
+      rx_len = 0;
+      rx_overflow = false;
+    } else if (rx_len < RX_MAX - 1) {
+      rx_buf[rx_len++] = c;
+    } else {
+      rx_overflow = true;              // swallow the rest, then refuse the line
+    }
+  }
+}
+
 void loop() {
   poll_endstops();
-
-  if (Serial.available()) {
-    String line = Serial.readStringUntil('\n');
-    line.trim();
-    if (line.length()) handle(line);
-  }
+  poll_serial();
 
   switch (mode) {
     case M_MOVING: run_move(); break;
@@ -427,8 +465,19 @@ void report_positions() {
 // after its back-off, which left the origin one back-off away from anything
 // you could point at.
 void start_home() {
+  // Both switches of one axis tripped at once is not a position, it is a
+  // fault: almost always an unplugged cable, which the NC wiring reports as
+  // tripped on purpose. Refuse before anything moves.
+  for (int i = 0; i < NAXIS; i++) {
+    if (sw_min[i].tripped() && sw_max[i].tripped()) {
+      Serial.print("ERR home switch_fault ");
+      Serial.println(axis_name[i]);
+      return;
+    }
+  }
   set_motors(true);
   for (int i = 0; i < NAXIS; i++) {
+    max_at_start[i] = sw_max[i].tripped();
     homed[i] = false;
     phase[i] = sw_min[i].tripped() ? PH_CLEAR : PH_FAST;
     phase_start_pos[i] = axis[i]->currentPosition();
@@ -455,7 +504,7 @@ void enter_phase(int i, Phase p) {
       break;
     case PH_PARK:
       axis[i]->setCurrentPosition(0);    // the slow trigger IS zero
-      axis[i]->setMaxSpeed(sps(MOVE_SPEED_MM_S));
+      axis[i]->setMaxSpeed(sps(move_mm_s));
       axis[i]->moveTo(mm_to_steps(HOME_CLEARANCE_MM));
       break;
     default: break;
@@ -469,15 +518,23 @@ void run_home() {
     switch (phase[i]) {
       case PH_CLEAR:                     // crawl off a switch we started on
         if (!sw_min[i].tripped()) { enter_phase(i, PH_FAST); break; }
-        if (seek_overrun(i)) { phase[i] = PH_FAIL; fail_reason = "min_stuck"; break; }
+        // Crawling off MIN runs toward MAX, so MAX is the switch in the way.
+        if (sw_max[i].tripped()) { phase[i] = PH_FAIL; fail_reason = "switch_fault"; break; }
+        // A real switch releases within a millimetre. Still "tripped" after
+        // HOME_CLEAR_MAX_MM means the MIN wire is cut, not that it is pressed.
+        if (labs(axis[i]->currentPosition() - phase_start_pos[i]) > mm_to_steps(HOME_CLEAR_MAX_MM)) {
+          phase[i] = PH_FAIL; fail_reason = "min_stuck"; break;
+        }
         axis[i]->runSpeed();
         break;
 
       case PH_FAST:
         if (sw_min[i].tripped()) { enter_phase(i, PH_BACKOFF); break; }
         // Reaching MAX while seeking MIN means the axis is running the wrong
-        // way: the direction pin or the two switches are swapped.
-        if (sw_max[i].tripped()) { phase[i] = PH_FAIL; fail_reason = "wrong_direction"; break; }
+        // way: the direction pin or the two switches are swapped. Unless it
+        // started on MAX, in which case it is still leaving it.
+        if (max_at_start[i] && !sw_max[i].tripped()) max_at_start[i] = false;
+        if (sw_max[i].tripped() && !max_at_start[i]) { phase[i] = PH_FAIL; fail_reason = "wrong_direction"; break; }
         if (seek_overrun(i)) { phase[i] = PH_FAIL; fail_reason = "no_min_switch"; break; }
         axis[i]->runSpeed();
         break;
@@ -545,7 +602,7 @@ void start_measure() {
     // Seek at the normal move speed, not the homing crawl: this only has to
     // be good to a few microns (the stop is abrupt and may drop a step or
     // two), and HOME_SLOW_MM_S would take eight minutes over 25 mm.
-    axis[i]->setSpeed(sps(MOVE_SPEED_MM_S));
+    axis[i]->setSpeed(sps(move_mm_s));
     if (phase[i] == PH_DONE) {
       travel_mm[i] = steps_to_mm(axis[i]->currentPosition());
       soft_max[i] = mm_to_steps(travel_mm[i] - MAX_CLEARANCE_MM);
@@ -577,7 +634,7 @@ void run_measure() {
   // Retreat off the MAX switches so the axes are not left sitting on a limit.
   if (ok) {
     long t[NAXIS] = {soft_max[Z1], soft_max[Z2]};
-    for (int i = 0; i < NAXIS; i++) axis[i]->setMaxSpeed(sps(MOVE_SPEED_MM_S));
+    for (int i = 0; i < NAXIS; i++) axis[i]->setMaxSpeed(sps(move_mm_s));
     pair.moveTo(t);
     retreat_after_measure = true;
     mode = M_MOVING;   // completion posts the one OK TRAVEL line
@@ -663,7 +720,7 @@ bool begin_move(float z1_mm, float z2_mm) {
       Serial.println(hit);
       return false;
     }
-    axis[i]->setMaxSpeed(sps(MOVE_SPEED_MM_S));
+    axis[i]->setMaxSpeed(sps(move_mm_s));
   }
   set_motors(true);
   pair.moveTo(t);
@@ -736,18 +793,29 @@ void handle(String cmd) {
   } else if (verb == "disable") {
     if (mode != M_IDLE) { Serial.println("ERR busy"); return; }
     set_motors(false);
-    // Position is still believed, but an un-energised motor can be back-driven
-    // and nothing would notice, so the homed flag has to go.
+    // Consistent with the idle policy. With HOLD_WHEN_IDLE 0 the firmware
+    // already de-energises after every move and keeps trusting the position
+    // (the lead screw is self-locking), so an explicit disable is no different
+    // and keeps homed. With HOLD_WHEN_IDLE 1 you have decided the axis CAN be
+    // back-driven, so an un-energised motor means the position is no longer
+    // known. (The A4988 keeps counting STEP/DIR while disabled, so re-enabling
+    // does not by itself move the rotor.)
+#if HOLD_WHEN_IDLE
     homed[Z1] = homed[Z2] = false;
     Serial.println("OK disabled not_homed");
+#else
+    Serial.println("OK disabled");
+#endif
 
   } else if (verb == "speed") {
     if (n != 2) { Serial.println("ERR usage speed <mm_per_s>"); return; }
     float v = token(cmd, 1).toFloat();
     if (v <= 0) { Serial.println("ERR speed"); return; }
-    for (int i = 0; i < NAXIS; i++) axis[i]->setMaxSpeed(sps(v));
+    // Takes effect from the next move; sps() clamps it to the step-rate
+    // ceiling, and the reply says what was actually set.
+    move_mm_s = sps(v) / STEPS_PER_MM;
     Serial.print("OK speed ");
-    Serial.println(sps(v) / STEPS_PER_MM, 4);
+    Serial.println(move_mm_s, 4);
 
   } else {
     Serial.println("ERR unknown_command");

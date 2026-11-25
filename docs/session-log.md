@@ -14,6 +14,48 @@ absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
 
+## 2026-11-24 (evening) — Firmware 1.1 after a second review; wiring schematic
+
+Lucas has the Mega, two Pololu green A4988 carriers, the motors and the
+switches wired, and asked for a schematic to check against. A fresh review of
+the sketch before drawing it turned up five real defects, fixed in 1.1:
+
+- **`speed` did nothing.** Every move reset maxSpeed from `MOVE_SPEED_MM_S`.
+  Now a variable, `move_mm_s`, used by every move, the park and `travel`.
+- **Homing failed from the MAX end.** PH_FAST called any MAX trip
+  `wrong_direction`, including the MAX the axis started on. That is where a
+  power cycle at the far end, or an `ERR limit z1max`, leaves it. Now a MAX
+  that was tripped at the start is ignored until it clears.
+- **A cut cable defeated homing.** With both switches reading tripped (the NC
+  fail-safe), PH_CLEAR crawled toward MAX for up to 60 mm without checking it.
+  Now `home` refuses up front (`ERR home switch_fault z1`), and PH_CLEAR stops
+  on MAX and gives up after 3 mm (`min_stuck`).
+- **`readStringUntil` blocked the step loop**, for a full second per command
+  with the Serial Monitor on "No line ending". It is replaced by a
+  byte-at-a-time accumulator that ends a line on CR or LF; over-long lines get
+  `ERR line_too_long`.
+- **`disable` contradicted the idle policy.** It cleared `homed`, while the
+  firmware de-energises after every move by default and keeps trusting the
+  position. It now clears `homed` only with `HOLD_WHEN_IDLE 1`.
+
+Still not compiled. The structural check passes on 1.1.
+
+**Wiring page, `docs/wiring.html`** (also published as a private artifact):
+a block view of what the two channels share; one channel with every wire; the
+real carrier pin order; one limit switch; the Mega pin table; and a three-stage
+checklist (all off / USB only / motor supply on with the motors unplugged).
+Matched to Lucas's board against Pololu's minimal-wiring diagram. That diagram
+leaves ENABLE and MS1–MS3 unconnected, which means full step and always
+energised. Here MS1/MS2 go to 5 V and ENABLE to D6, and the page says why.
+
+Hardware additions from the review, both in the README and on the page:
+- a **recommended 10 kΩ from ENABLE (D6) to 5 V**: the Mega's pins float
+  through every reset, and the DAQ resets it on every port open. The page
+  includes a check for it: hold RESET and ENABLE should read above 3.5 V;
+- the **100 µF is polarised**: stripe (−) to GND.
+
+---
+
 ## 2026-11-24 (later) — Drivers identified as A4988; wiring cut to that part
 
 Lucas read `4988ET` off the driver module: Allegro **A4988**, 28-pin QFN

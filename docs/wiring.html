@@ -1,0 +1,644 @@
+<title>Lens Z Wiring</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: one reading column of drawing sheets on faint engineering-paper grid,
+   wires colour-coded by net, checklist last. */
+:root {
+  --bg: #f2f4f6;
+  --panel: #ffffff;
+  --ink: #17202a;
+  --muted: #5b6672;
+  --rule: #d4dae0;
+  --grid: #e7ecf0;
+  --vplus: #c22f2a;
+  --sig: #1e5ec8;
+  --check: #a35700;
+  --ok: #1b7745;
+  --board: #e6eee3;
+  --chip: #262d34;
+  --chip-ink: #e6ebf0;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1318; --panel: #151c23; --ink: #e2e8ee; --muted: #95a1ad; --rule: #2a343e; --grid: #1a222a;
+    --vplus: #ff716a; --sig: #72a8ff; --check: #f0a443; --ok: #4dc489; --board: #19281f; --chip: #090c10; --chip-ink: #c8d1da;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1318; --panel: #151c23; --ink: #e2e8ee; --muted: #95a1ad; --rule: #2a343e; --grid: #1a222a;
+  --vplus: #ff716a; --sig: #72a8ff; --check: #f0a443; --ok: #4dc489; --board: #19281f; --chip: #090c10; --chip-ink: #c8d1da;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+  display: grid; gap: 28px;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 21px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+header { display: grid; gap: 12px; }
+.warn {
+  display: flex; gap: 10px; align-items: flex-start;
+  border: 1px solid var(--rule); border-left: 4px solid var(--check);
+  background: var(--panel); border-radius: 8px; padding: 12px 14px; max-width: 76ch;
+}
+.warn strong { color: var(--check); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+.swatch { width: 26px; height: 0; border-top: 3px solid; display: inline-block; }
+.sw-pwr { border-color: var(--vplus); } .sw-sig { border-color: var(--sig); }
+.sw-gnd { border-color: var(--ink); border-top-width: 4px; } .sw-chk { border-color: var(--check); }
+.sw-mot { border-color: var(--muted); }
+
+section { display: grid; gap: 14px; }
+.sec-head { display: grid; gap: 4px; }
+.sec-head p { color: var(--muted); }
+
+figure.fig { margin: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.figscroll {
+  overflow-x: auto; padding: 14px;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.fig svg { display: block; width: 100%; height: auto; }
+.f1 svg { min-width: 620px; } .f2 svg { min-width: 720px; } .f3 svg { min-width: 540px; } .f4 svg { min-width: 520px; }
+figcaption { border-top: 1px solid var(--rule); padding: 12px 16px 14px; font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+figcaption b { font-family: var(--mono); font-weight: 600; color: var(--ink); margin-right: 6px; }
+
+/* SVG styling lives here, outside the drawings */
+svg text { font-family: var(--mono); fill: var(--ink); }
+.t-title { font-family: var(--display); font-weight: 600; font-size: 15px; }
+.t-pin { font-size: 12px; font-weight: 500; }
+.t-lbl { font-size: 11px; }
+.t-big { font-size: 20px; font-weight: 600; }
+.t-cap { font-size: 10.5px; letter-spacing: 0.08em; fill: var(--muted); }
+.t-mute { fill: var(--muted); }
+.t-pwr { fill: var(--vplus); } .t-sig { fill: var(--sig); } .t-chk { fill: var(--check); }
+.t-chipink { fill: var(--chip-ink); font-size: 10px; }
+.blk { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+.board { fill: var(--board); stroke: var(--ink); stroke-width: 1.5; }
+.chip { fill: var(--chip); stroke: none; }
+.pad { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+.pot { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+.rs { fill: var(--muted); stroke: none; }
+.w { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.w-sig { stroke: var(--sig); } .w-pwr { stroke: var(--vplus); } .w-gnd { stroke: var(--ink); }
+.w-chk { stroke: var(--check); } .w-mot { stroke: var(--muted); stroke-width: 3; } .w-thin { stroke: var(--muted); stroke-width: 1.5; }
+.bus { stroke-width: 4; }
+.dot { stroke: none; } .dot-sig { fill: var(--sig); } .dot-pwr { fill: var(--vplus); } .dot-gnd { fill: var(--ink); }
+.plate { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
+.plate-pwr { stroke: var(--vplus); }
+.res { fill: var(--panel); stroke: var(--check); stroke-width: 2; }
+.res-int { fill: var(--panel); stroke: var(--muted); stroke-width: 1.5; }
+
+/* tables */
+.tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+td.pin { font-family: var(--mono); font-weight: 600; white-space: nowrap; }
+.c-sig { color: var(--sig); } .c-pwr { color: var(--vplus); } .c-chk { color: var(--check); } .c-mute { color: var(--muted); }
+
+.split { display: grid; gap: 14px; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 760px) { .split { grid-template-columns: minmax(0, 1fr); } }
+
+/* checklist */
+.stages { display: grid; gap: 14px; }
+.stage { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.stage-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--rule); }
+.stage-head h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.stage-head .cond { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 400; }
+.count { font-family: var(--mono); font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.count.done { color: var(--ok); }
+.checks { list-style: none; margin: 0; padding: 0; }
+.checks li { border-bottom: 1px solid var(--rule); }
+.checks li:last-child { border-bottom: none; }
+.checks label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 11px 16px; cursor: pointer; }
+.checks input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ok); cursor: pointer; }
+.checks input:focus-visible { outline: 2px solid var(--sig); outline-offset: 2px; }
+.checks .txt { display: grid; gap: 2px; min-width: 0; }
+.checks .txt strong { font-weight: 600; }
+.checks .txt span { color: var(--muted); font-size: 14px; }
+.checks input:checked + .txt strong { color: var(--ok); }
+.toolbar { display: flex; justify-content: flex-end; }
+button {
+  font: inherit; font-size: 13px; font-family: var(--mono);
+  background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--sig); outline-offset: 2px; }
+
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; display: grid; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main class="wrap">
+
+<header>
+  <div class="eyebrow">xsphere-lens-z · firmware lens_z 1.1 · Arduino Mega 2560 · A4988</div>
+  <h1>Lens Z wiring</h1>
+  <p>Two A4988 carriers drive Z1 and Z2, both pushing one lens along one axis, with a MIN and a MAX limit switch on each motor. Check the build against the figures, then work through the checklist at the bottom before motor power goes on.</p>
+  <div class="warn" role="note">
+    <span aria-hidden="true">⚠</span>
+    <p><strong>Never plug or unplug a motor while its driver has motor power.</strong> It destroys A4988s. Set the current limit with the motors disconnected (checklist, stage C).</p>
+  </div>
+  <div class="legend" aria-label="Wire colour legend">
+    <span><i class="swatch sw-pwr"></i>supply (12–24 V or 5 V)</span>
+    <span><i class="swatch sw-sig"></i>logic signal</span>
+    <span><i class="swatch sw-gnd"></i>ground</span>
+    <span><i class="swatch sw-mot"></i>motor leads</span>
+    <span><i class="swatch sw-chk"></i>easy to miss, or recommended</span>
+    <span>● joined &nbsp;·&nbsp; lines that cross without a dot are not joined</span>
+  </div>
+</header>
+
+<!-- ============================ FIG 1 ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>The whole rig</h2>
+    <p>Two identical channels. The two channels share ENABLE, the 5 V logic supply, the motor supply and one ground. Everything else is per channel.</p>
+  </div>
+  <figure class="fig f1">
+    <div class="figscroll">
+      <svg viewBox="0 0 760 400" role="img" aria-label="Block diagram: the Arduino Mega sends STEP and DIR to each A4988 separately and ENABLE to both; the motor supply feeds VMOT on both drivers; each driver runs one motor; four limit switches report to the Mega; every block shares one ground.">
+        <!-- motor leads -->
+        <line class="w w-mot" x1="380" y1="66" x2="380" y2="110"/>
+        <text class="t-lbl t-mute" x="390" y="92">4 wires</text>
+        <line class="w w-mot" x1="380" y1="290" x2="380" y2="334"/>
+        <text class="t-lbl t-mute" x="390" y="316">4 wires</text>
+
+        <!-- per-channel signals -->
+        <line class="w w-sig" x1="190" y1="150" x2="300" y2="150"/>
+        <text class="t-lbl t-sig" x="245" y="142" text-anchor="middle">D3 STEP · D2 DIR</text>
+        <line class="w w-sig" x1="190" y1="250" x2="300" y2="250"/>
+        <text class="t-lbl t-sig" x="245" y="266" text-anchor="middle">D5 STEP · D4 DIR</text>
+
+        <!-- shared ENABLE -->
+        <line class="w w-sig" x1="190" y1="200" x2="270" y2="200"/>
+        <polyline class="w w-sig" points="300,160 270,160 270,240 300,240"/>
+        <circle class="dot dot-sig" cx="270" cy="200" r="3.5"/>
+        <text class="t-lbl t-sig" x="228" y="192" text-anchor="middle">D6 ENABLE</text>
+
+        <!-- motor supply -->
+        <line class="w w-pwr" x1="570" y1="200" x2="500" y2="200"/>
+        <polyline class="w w-pwr" points="460,140 500,140 500,262 460,262"/>
+        <circle class="dot dot-pwr" cx="500" cy="200" r="3.5"/>
+        <text class="t-lbl t-pwr" x="535" y="192" text-anchor="middle">VMOT</text>
+
+        <!-- switches -->
+        <line class="w w-sig" x1="105" y1="260" x2="105" y2="310"/>
+        <text class="t-lbl t-sig" x="115" y="289">D7 D8 D9 D10</text>
+
+        <!-- blocks -->
+        <rect class="blk" x="300" y="16" width="160" height="50" rx="6"/>
+        <text class="t-title" x="380" y="46" text-anchor="middle">Motor Z1</text>
+        <rect class="blk" x="300" y="110" width="160" height="56" rx="6"/>
+        <text class="t-title" x="380" y="143" text-anchor="middle">A4988 · Z1</text>
+        <rect class="blk" x="300" y="234" width="160" height="56" rx="6"/>
+        <text class="t-title" x="380" y="267" text-anchor="middle">A4988 · Z2</text>
+        <rect class="blk" x="300" y="334" width="160" height="50" rx="6"/>
+        <text class="t-title" x="380" y="364" text-anchor="middle">Motor Z2</text>
+        <rect class="blk" x="20" y="140" width="170" height="120" rx="6"/>
+        <text class="t-title" x="105" y="188" text-anchor="middle">Arduino</text>
+        <text class="t-title" x="105" y="207" text-anchor="middle">Mega 2560</text>
+        <text class="t-lbl t-mute" x="105" y="233" text-anchor="middle">USB → DAQ PC</text>
+        <rect class="blk" x="20" y="310" width="170" height="56" rx="6"/>
+        <text class="t-title" x="105" y="343" text-anchor="middle">Limit switches ×4</text>
+        <rect class="blk" x="570" y="170" width="170" height="60" rx="6"/>
+        <text class="t-title" x="655" y="195" text-anchor="middle">Motor supply</text>
+        <text class="t-pin" x="655" y="215" text-anchor="middle">12–24 V DC</text>
+
+        <!-- grounds: every one is the same net -->
+        <path class="w w-gnd" d="M45 260 v12 M36 272 h18 M39 276 h12 M42 280 h6"/>
+        <path class="w w-gnd" d="M430 166 v12 M421 178 h18 M424 182 h12 M427 186 h6"/>
+        <path class="w w-gnd" d="M430 290 v12 M421 302 h18 M424 306 h12 M427 310 h6"/>
+        <path class="w w-gnd" d="M655 230 v12 M646 242 h18 M649 246 h12 M652 250 h6"/>
+        <path class="w w-gnd" d="M170 366 v12 M161 378 h18 M164 382 h12 M167 386 h6"/>
+        <text class="t-lbl t-mute" x="740" y="390" text-anchor="end">every ground symbol is one net</text>
+      </svg>
+    </div>
+    <figcaption>
+      <div><b>Fig 1</b>The Mega is powered over USB from the DAQ PC. The motor supply goes <strong>only</strong> to the drivers' VMOT pins, never to the Mega's Vin or 5 V. Its negative terminal still joins the common ground.</div>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================ FIG 2 ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>One channel, every wire</h2>
+    <p>Channel Z1. Z2 is identical except STEP comes from <code>D5</code> and DIR from <code>D4</code>. ENABLE (<code>D6</code>), 5 V and ground are the same wires, shared.</p>
+  </div>
+  <figure class="fig f2">
+    <div class="figscroll">
+      <svg viewBox="0 0 900 520" role="img" aria-label="Schematic of channel Z1: Mega D3 to STEP, D2 to DIR, D6 to ENABLE with a recommended 10 kilohm pull-up to 5 V, 5 V to VDD; MS1 and MS2 to 5 V, MS3 open, RST jumpered to SLP; the motor supply to VMOT with a 100 microfarad capacitor to ground; coil A on 1A and 1B, coil B on 2A and 2B; the Mega ground, driver ground and supply negative on one bus.">
+        <!-- ground bus -->
+        <line class="w w-gnd bus" x1="70" y1="480" x2="800" y2="480"/>
+        <text class="t-cap" x="72" y="503">COMMON GROUND · ONE NET</text>
+
+        <!-- Arduino -->
+        <rect class="blk" x="40" y="170" width="170" height="230" rx="6"/>
+        <text class="t-pin t-sig" x="202" y="219" text-anchor="end">D3</text>
+        <text class="t-pin t-sig" x="202" y="254" text-anchor="end">D2</text>
+        <text class="t-pin t-sig" x="202" y="289" text-anchor="end">D6</text>
+        <text class="t-pin t-pwr" x="202" y="349" text-anchor="end">5V</text>
+        <text class="t-lbl t-mute" x="56" y="300">USB · DAQ PC</text>
+        <text class="t-pin" x="70" y="392" text-anchor="middle">GND</text>
+        <text class="t-title" x="133" y="366" text-anchor="middle">Arduino</text>
+        <text class="t-title" x="133" y="388" text-anchor="middle">Mega 2560</text>
+
+        <!-- signals -->
+        <line class="w w-sig" x1="210" y1="215" x2="360" y2="215"/>
+        <text class="t-lbl t-sig" x="300" y="208" text-anchor="middle">STEP</text>
+        <line class="w w-sig" x1="210" y1="250" x2="360" y2="250"/>
+        <text class="t-lbl t-sig" x="300" y="243" text-anchor="middle">DIR</text>
+        <line class="w w-sig" x1="210" y1="285" x2="360" y2="285"/>
+        <text class="t-lbl t-sig" x="300" y="278" text-anchor="middle">ENABLE · also Z2</text>
+        <line class="w w-pwr" x1="210" y1="345" x2="360" y2="345"/>
+        <text class="t-lbl t-pwr" x="340" y="338" text-anchor="middle">5 V</text>
+
+        <!-- recommended pull-up on ENABLE -->
+        <circle class="dot dot-sig" cx="240" cy="285" r="3.5"/>
+        <line class="w w-chk" x1="240" y1="285" x2="240" y2="297"/>
+        <rect class="res" x="234" y="297" width="12" height="36"/>
+        <line class="w w-chk" x1="240" y1="333" x2="240" y2="345"/>
+        <circle class="dot dot-pwr" cx="240" cy="345" r="3.5"/>
+        <text class="t-lbl t-chk" x="254" y="311">10 kΩ</text>
+        <text class="t-lbl t-chk" x="254" y="325">recommended</text>
+
+        <!-- Arduino ground -->
+        <line class="w w-gnd" x1="70" y1="400" x2="70" y2="480"/>
+        <circle class="dot dot-gnd" cx="70" cy="480" r="4"/>
+
+        <!-- motor -->
+        <line class="w w-mot" x1="430" y1="115" x2="430" y2="170"/>
+        <line class="w w-mot" x1="470" y1="115" x2="470" y2="170"/>
+        <line class="w w-mot" x1="530" y1="115" x2="530" y2="170"/>
+        <line class="w w-mot" x1="570" y1="115" x2="570" y2="170"/>
+        <rect class="blk" x="400" y="20" width="200" height="95" rx="6"/>
+        <text class="t-title" x="500" y="46" text-anchor="middle">Stepper motor · Z1</text>
+        <text class="t-lbl t-mute" x="500" y="64" text-anchor="middle">0.9° · 400 steps/rev</text>
+        <text class="t-lbl" x="450" y="92" text-anchor="middle">coil A</text>
+        <text class="t-lbl" x="550" y="92" text-anchor="middle">coil B</text>
+        <path class="w w-thin" d="M430 115 V100 H470 V115 M530 115 V100 H570 V115"/>
+
+        <!-- driver -->
+        <rect class="blk" x="360" y="170" width="280" height="230" rx="6"/>
+        <text class="t-title" x="500" y="278" text-anchor="middle">A4988 carrier</text>
+        <text class="t-lbl t-mute" x="500" y="296" text-anchor="middle">channel Z1</text>
+        <text class="t-pin" x="372" y="219">STEP</text>
+        <text class="t-pin" x="372" y="254">DIR</text>
+        <text class="t-pin" x="372" y="289">ENABLE</text>
+        <text class="t-pin" x="372" y="349">VDD</text>
+        <text class="t-pin" x="430" y="190" text-anchor="middle">1A</text>
+        <text class="t-pin" x="470" y="190" text-anchor="middle">1B</text>
+        <text class="t-pin" x="530" y="190" text-anchor="middle">2A</text>
+        <text class="t-pin" x="570" y="190" text-anchor="middle">2B</text>
+        <text class="t-pin" x="628" y="219" text-anchor="end">VMOT</text>
+        <text class="t-pin" x="395" y="390" text-anchor="middle">GND</text>
+        <text class="t-pin" x="445" y="390" text-anchor="middle">MS1</text>
+        <text class="t-pin" x="490" y="390" text-anchor="middle">MS2</text>
+        <text class="t-pin" x="535" y="390" text-anchor="middle">MS3</text>
+        <text class="t-pin" x="580" y="390" text-anchor="middle">RST</text>
+        <text class="t-pin" x="620" y="390" text-anchor="middle">SLP</text>
+
+        <!-- straps on the driver -->
+        <line class="w w-gnd" x1="395" y1="400" x2="395" y2="480"/>
+        <circle class="dot dot-gnd" cx="395" cy="480" r="4"/>
+        <line class="w w-pwr" x1="445" y1="400" x2="445" y2="418"/>
+        <text class="t-lbl t-pwr" x="445" y="432" text-anchor="middle">5 V</text>
+        <line class="w w-pwr" x1="490" y1="400" x2="490" y2="418"/>
+        <text class="t-lbl t-pwr" x="490" y="432" text-anchor="middle">5 V</text>
+        <line class="w w-thin" x1="535" y1="400" x2="535" y2="410"/>
+        <text class="t-lbl t-mute" x="535" y="432" text-anchor="middle">open</text>
+        <polyline class="w w-chk" points="580,400 580,420 620,420 620,400"/>
+        <text class="t-lbl t-chk" x="600" y="436" text-anchor="middle">jumper</text>
+
+        <!-- motor supply and its capacitor -->
+        <line class="w w-pwr" x1="640" y1="215" x2="720" y2="215"/>
+        <circle class="dot dot-pwr" cx="685" cy="215" r="3.5"/>
+        <line class="w w-pwr" x1="685" y1="215" x2="685" y2="262"/>
+        <line class="plate plate-pwr" x1="673" y1="262" x2="697" y2="262"/>
+        <path class="plate" d="M673 273 Q685 266 697 273"/>
+        <line class="w w-gnd" x1="685" y1="270" x2="685" y2="480"/>
+        <circle class="dot dot-gnd" cx="685" cy="480" r="4"/>
+        <text class="t-lbl t-pwr" x="668" y="259" text-anchor="end">+</text>
+        <text class="t-lbl" x="702" y="266">100 µF</text>
+        <text class="t-lbl t-mute" x="702" y="280">at the board</text>
+
+        <rect class="blk" x="720" y="180" width="160" height="70" rx="6"/>
+        <text class="t-title" x="808" y="205" text-anchor="middle">Motor supply</text>
+        <text class="t-pin" x="808" y="225" text-anchor="middle">12–24 V DC</text>
+        <text class="t-pin t-pwr" x="729" y="219">+</text>
+        <text class="t-pin" x="800" y="245" text-anchor="middle">−</text>
+        <line class="w w-gnd" x1="800" y1="250" x2="800" y2="480"/>
+        <circle class="dot dot-gnd" cx="800" cy="480" r="4"/>
+      </svg>
+    </div>
+    <figcaption>
+      <div><b>Fig 2</b>MS1 and MS2 at 5 V with MS3 open selects 1/8 microstepping, which matches <code>MICROSTEPS 8</code>. The chip pulls all three low internally, so a loose MS wire silently becomes full step.</div>
+      <div>The 10 kΩ holds ENABLE high, so the outputs stay off while the Mega's pins float during a reset. A reset happens every time the DAQ opens the port. One resistor serves both drivers.</div>
+      <div>The ground bus can run through the carriers. Wire supply − to each driver's top GND pin and Mega GND to each bottom GND pin; the board joins the two, as in Pololu's diagram.</div>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================ FIG 3 ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>On the carrier itself</h2>
+    <p>The same connections in the real pin order of your board, the Pololu green A4988 carrier, seen from the component side with the VREF pot at the bottom.</p>
+  </div>
+  <figure class="fig f3">
+    <div class="figscroll">
+      <svg viewBox="0 0 600 380" role="img" aria-label="A4988 carrier pinout. Left side top to bottom: ENABLE to D6, MS1 to 5 V, MS2 to 5 V, MS3 open, RST and SLP jumpered together, STEP to D3, DIR to D2. Right side top to bottom: VMOT to the motor supply with a 100 microfarad capacitor to the GND pin below it, GND to supply negative, 2B and 2A to motor coil B, 1A and 1B to motor coil A, VDD to Arduino 5 V, GND to Arduino ground.">
+        <rect class="board" x="180" y="30" width="200" height="320" rx="8"/>
+        <!-- chip, trimpot, sense resistors -->
+        <rect class="chip" x="250" y="120" width="60" height="60" rx="3"/>
+        <text class="t-chipink" x="280" y="154" text-anchor="middle">4988ET</text>
+        <rect class="rs" x="257" y="196" width="18" height="9" rx="1"/>
+        <rect class="rs" x="285" y="196" width="18" height="9" rx="1"/>
+        <text class="t-lbl t-mute" x="280" y="222" text-anchor="middle">RS: read</text>
+        <text class="t-lbl t-mute" x="280" y="236" text-anchor="middle">R050/R068/R100</text>
+        <circle class="pot" cx="280" cy="296" r="13"/>
+        <line class="w w-gnd" x1="272" y1="304" x2="288" y2="288"/>
+        <text class="t-lbl" x="280" y="330" text-anchor="middle">VREF pot</text>
+
+        <!-- left pads -->
+        <circle class="pad" cx="196" cy="60" r="6"/><circle class="pad" cx="196" cy="98" r="6"/>
+        <circle class="pad" cx="196" cy="136" r="6"/><circle class="pad" cx="196" cy="174" r="6"/>
+        <circle class="pad" cx="196" cy="212" r="6"/><circle class="pad" cx="196" cy="250" r="6"/>
+        <circle class="pad" cx="196" cy="288" r="6"/><circle class="pad" cx="196" cy="326" r="6"/>
+        <text class="t-pin" x="210" y="64">ENABLE</text>
+        <text class="t-pin" x="210" y="102">MS1</text>
+        <text class="t-pin" x="210" y="140">MS2</text>
+        <text class="t-pin" x="210" y="178">MS3</text>
+        <text class="t-pin" x="210" y="216">RST</text>
+        <text class="t-pin" x="210" y="254">SLP</text>
+        <text class="t-pin" x="210" y="292">STEP</text>
+        <text class="t-pin" x="210" y="330">DIR</text>
+
+        <!-- right pads -->
+        <circle class="pad" cx="364" cy="60" r="6"/><circle class="pad" cx="364" cy="98" r="6"/>
+        <circle class="pad" cx="364" cy="136" r="6"/><circle class="pad" cx="364" cy="174" r="6"/>
+        <circle class="pad" cx="364" cy="212" r="6"/><circle class="pad" cx="364" cy="250" r="6"/>
+        <circle class="pad" cx="364" cy="288" r="6"/><circle class="pad" cx="364" cy="326" r="6"/>
+        <text class="t-pin" x="350" y="64" text-anchor="end">VMOT</text>
+        <text class="t-pin" x="350" y="102" text-anchor="end">GND</text>
+        <text class="t-pin" x="350" y="140" text-anchor="end">2B</text>
+        <text class="t-pin" x="350" y="178" text-anchor="end">2A</text>
+        <text class="t-pin" x="350" y="216" text-anchor="end">1A</text>
+        <text class="t-pin" x="350" y="254" text-anchor="end">1B</text>
+        <text class="t-pin" x="350" y="292" text-anchor="end">VDD</text>
+        <text class="t-pin" x="350" y="330" text-anchor="end">GND</text>
+
+        <!-- left connections -->
+        <line class="w w-sig" x1="176" y1="60" x2="190" y2="60"/>
+        <text class="t-lbl t-sig" x="170" y="64" text-anchor="end">D6 (+10 kΩ to 5 V)</text>
+        <line class="w w-pwr" x1="176" y1="98" x2="190" y2="98"/>
+        <text class="t-lbl t-pwr" x="170" y="102" text-anchor="end">5 V</text>
+        <line class="w w-pwr" x1="176" y1="136" x2="190" y2="136"/>
+        <text class="t-lbl t-pwr" x="170" y="140" text-anchor="end">5 V</text>
+        <text class="t-lbl t-mute" x="170" y="178" text-anchor="end">open</text>
+        <polyline class="w w-chk" points="190,212 150,212 150,250 190,250"/>
+        <text class="t-lbl t-chk" x="142" y="235" text-anchor="end">jumper</text>
+        <line class="w w-sig" x1="176" y1="288" x2="190" y2="288"/>
+        <text class="t-lbl t-sig" x="170" y="292" text-anchor="end">D3 (Z2: D5)</text>
+        <line class="w w-sig" x1="176" y1="326" x2="190" y2="326"/>
+        <text class="t-lbl t-sig" x="170" y="330" text-anchor="end">D2 (Z2: D4)</text>
+
+        <!-- right connections: supply + capacitor -->
+        <line class="w w-pwr" x1="370" y1="60" x2="440" y2="60"/>
+        <line class="w w-pwr" x1="440" y1="60" x2="440" y2="72"/>
+        <line class="plate plate-pwr" x1="428" y1="72" x2="452" y2="72"/>
+        <path class="plate" d="M428 83 Q440 76 452 83"/>
+        <line class="w w-gnd" x1="440" y1="80" x2="440" y2="98"/>
+        <line class="w w-gnd" x1="370" y1="98" x2="440" y2="98"/>
+        <text class="t-lbl t-pwr" x="423" y="70" text-anchor="end">+</text>
+        <text class="t-lbl t-pwr" x="384" y="52">+12–24 V</text>
+        <text class="t-lbl" x="462" y="77">100 µF</text>
+        <text class="t-lbl t-chk" x="462" y="91">stripe = −</text>
+        <text class="t-lbl" x="384" y="114">PSU − · common GND</text>
+
+        <!-- coils -->
+        <polyline class="w w-mot" points="370,136 394,136 394,174 370,174"/>
+        <line class="w w-mot" x1="394" y1="155" x2="410" y2="155"/>
+        <text class="t-lbl" x="416" y="159">motor coil B</text>
+        <polyline class="w w-mot" points="370,212 394,212 394,250 370,250"/>
+        <line class="w w-mot" x1="394" y1="231" x2="410" y2="231"/>
+        <text class="t-lbl" x="416" y="235">motor coil A</text>
+
+        <!-- logic supply -->
+        <line class="w w-pwr" x1="370" y1="288" x2="384" y2="288"/>
+        <text class="t-lbl t-pwr" x="390" y="292">Arduino 5 V</text>
+        <line class="w w-gnd" x1="370" y1="326" x2="384" y2="326"/>
+        <text class="t-lbl" x="390" y="330">Arduino GND</text>
+      </svg>
+    </div>
+    <figcaption>
+      <div><b>Fig 3</b>The two GND pins are joined on the board, but wire both: the top one carries motor current back to the supply, the bottom one is the logic reference. Put the 100 µF straight across VMOT and the GND beside it, with short leads. Electrolytics are polarised: the stripe on the can is negative.</div>
+      <div>Pololu's own minimal diagram leaves ENABLE and MS1–MS3 unconnected. That runs the motor at full step and always energised. Here MS1 and MS2 go to 5 V and ENABLE goes to D6, because the firmware expects 1/8 step and turns the motors off between moves.</div>
+      <div>The RST–SLP jumper only works if the carrier pulls SLP high. The A4988 has no internal pull-ups. Check it in stage B below.</div>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- ============================ FIG 4 ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>Each limit switch</h2>
+    <p>Four of these: <code>D7</code> Z1 MIN, <code>D8</code> Z1 MAX, <code>D9</code> Z2 MIN, <code>D10</code> Z2 MAX. Use the <strong>NC</strong> terminal, so a cut wire reads as a tripped switch.</p>
+  </div>
+  <div class="split">
+    <figure class="fig f4">
+      <div class="figscroll">
+        <svg viewBox="0 0 580 220" role="img" aria-label="Limit switch wiring: Arduino pin D7, with its internal pull-up to 5 V, runs to the switch's NC terminal; the switch's COM terminal goes to ground; NO is not used; a 100 nanofarad capacitor from the pin to ground sits at the Arduino end.">
+          <rect class="blk" x="20" y="40" width="190" height="140" rx="6"/>
+          <text class="t-title" x="36" y="64">Arduino Mega</text>
+          <text class="t-big t-sig" x="36" y="146">D7</text>
+          <text class="t-lbl t-mute" x="36" y="166">INPUT_PULLUP</text>
+          <text class="t-lbl t-pwr" x="180" y="58" text-anchor="middle">5 V</text>
+          <line class="w w-thin" x1="180" y1="62" x2="180" y2="76"/>
+          <rect class="res-int" x="174" y="76" width="12" height="34"/>
+          <line class="w w-thin" x1="180" y1="110" x2="180" y2="150"/>
+          <circle class="dot dot-sig" cx="180" cy="150" r="3"/>
+          <text class="t-lbl t-mute" x="166" y="92" text-anchor="end">20–50 kΩ</text>
+          <text class="t-lbl t-mute" x="166" y="106" text-anchor="end">internal</text>
+
+          <polyline class="w w-sig" points="180,150 450,150 450,90"/>
+          <circle class="dot dot-sig" cx="280" cy="150" r="3.5"/>
+          <line class="w w-sig" x1="280" y1="150" x2="280" y2="166"/>
+          <line class="plate" x1="268" y1="166" x2="292" y2="166"/>
+          <line class="plate" x1="268" y1="174" x2="292" y2="174"/>
+          <line class="w w-gnd" x1="280" y1="174" x2="280" y2="186"/>
+          <path class="w w-gnd" d="M271 186 h18 M274 190 h12 M277 194 h6"/>
+          <text class="t-lbl" x="300" y="172">100 nF</text>
+          <text class="t-lbl t-mute" x="300" y="186">at the Arduino end</text>
+
+          <rect class="blk" x="360" y="24" width="190" height="66" rx="5"/>
+          <text class="t-title" x="455" y="48" text-anchor="middle">microswitch</text>
+          <text class="t-pin" x="390" y="80" text-anchor="middle">COM</text>
+          <text class="t-pin t-sig" x="450" y="80" text-anchor="middle">NC</text>
+          <text class="t-pin t-mute" x="510" y="80" text-anchor="middle">NO</text>
+          <line class="w w-gnd" x1="390" y1="90" x2="390" y2="112"/>
+          <path class="w w-gnd" d="M381 112 h18 M384 116 h12 M387 120 h6"/>
+          <line class="w w-thin" x1="510" y1="90" x2="510" y2="102"/>
+          <text class="t-lbl t-mute" x="510" y="118" text-anchor="middle">not used</text>
+        </svg>
+      </div>
+      <figcaption>
+        <div><b>Fig 4</b>COM to GND, NC to the pin, NO left empty. The 100 nF is optional but cheap, and these wires run beside stepper cable. Fit it at the Arduino end.</div>
+      </figcaption>
+    </figure>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>state</th><th>switch</th><th>pin</th><th>firmware</th></tr></thead>
+        <tbody>
+          <tr><td>clear</td><td>closed</td><td class="pin">LOW</td><td>clear</td></tr>
+          <tr><td>pressed</td><td>open</td><td class="pin">HIGH</td><td class="c-chk"><strong>tripped</strong></td></tr>
+          <tr><td>wire cut or unplugged</td><td>open</td><td class="pin">HIGH</td><td class="c-chk"><strong>tripped</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ PIN TABLE ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>Every Mega pin in use</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mega pin</th><th>goes to</th><th>note</th></tr></thead>
+      <tbody>
+        <tr><td class="pin c-sig">D2</td><td>Z1 DIR</td><td></td></tr>
+        <tr><td class="pin c-sig">D3</td><td>Z1 STEP</td><td></td></tr>
+        <tr><td class="pin c-sig">D4</td><td>Z2 DIR</td><td></td></tr>
+        <tr><td class="pin c-sig">D5</td><td>Z2 STEP</td><td></td></tr>
+        <tr><td class="pin c-sig">D6</td><td>ENABLE on <em>both</em> drivers</td><td>low = on. 10 kΩ to 5 V recommended</td></tr>
+        <tr><td class="pin c-sig">D7</td><td>Z1 MIN switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D8</td><td>Z1 MAX switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D9</td><td>Z2 MIN switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D10</td><td>Z2 MAX switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-pwr">5V</td><td>VDD, MS1, MS2 on both drivers</td><td>power header</td></tr>
+        <tr><td class="pin">GND</td><td>common ground: both drivers, switch COMs, motor supply −</td><td>power header, or beside D13</td></tr>
+        <tr><td class="pin c-mute">D0, D1</td><td>USB serial</td><td>leave free</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ CHECKLIST ============================ -->
+<section>
+  <div class="sec-head">
+    <h2>Before motor power</h2>
+    <p>Three stages, in order. Ticks are saved in this browser only.</p>
+  </div>
+  <div class="stages">
+
+    <div class="stage" data-stage="a">
+      <div class="stage-head">
+        <h3>A · Everything off <span class="cond">multimeter on continuity</span></h3>
+        <span class="count" aria-live="polite"></span>
+      </div>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="a1"><span class="txt"><strong>One ground.</strong><span>Supply −, Mega GND, both GND pins on both drivers and all four switch COMs beep to each other.</span></span></label></li>
+        <li><label><input type="checkbox" id="a2"><span class="txt"><strong>No shorts.</strong><span>Supply + to supply − is silent, and so is VMOT to GND on each driver.</span></span></label></li>
+        <li><label><input type="checkbox" id="a3"><span class="txt"><strong>Supply + goes only to VMOT.</strong><span>Not to the Mega's Vin or 5V. The Mega runs on USB.</span></span></label></li>
+        <li><label><input type="checkbox" id="a4"><span class="txt"><strong>Coils paired.</strong><span>On each motor, the two wires reading a few ohms go to 1A/1B. The other pair goes to 2A/2B. Between pairs: open.</span></span></label></li>
+        <li><label><input type="checkbox" id="a5"><span class="txt"><strong>RST jumpered to SLP</strong> on both drivers.<span>Without it, the chip ignores every step pulse.</span></span></label></li>
+        <li><label><input type="checkbox" id="a6"><span class="txt"><strong>MS1 and MS2 to 5 V, MS3 open</strong> on both drivers.<span>Gives 1/8 microstepping, which matches the firmware.</span></span></label></li>
+        <li><label><input type="checkbox" id="a7"><span class="txt"><strong>100 µF across VMOT/GND</strong> on each driver, short leads, stripe to GND.</span></label></li>
+        <li><label><input type="checkbox" id="a8"><span class="txt"><strong>Switches on NC.</strong><span>COM to NC beeps at rest and goes silent when pressed. Check all four.</span></span></label></li>
+      </ul>
+    </div>
+
+    <div class="stage" data-stage="b">
+      <div class="stage-head">
+        <h3>B · USB only <span class="cond">motor supply off</span></h3>
+        <span class="count" aria-live="polite"></span>
+      </div>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="b1"><span class="txt"><strong>VDD reads about 5 V</strong> to GND on each driver.</span></label></li>
+        <li><label><input type="checkbox" id="b2"><span class="txt"><strong>SLP reads about 5 V</strong> to GND on each driver.<span>If it reads 0 V, the carrier doesn't pull it up. Replace the jumper with 10 kΩ from RST and from SLP to VDD.</span></span></label></li>
+        <li><label><input type="checkbox" id="b7"><span class="txt"><strong>If you fitted the 10 kΩ:</strong> hold the Mega's RESET button and measure ENABLE to GND.<span>It should read above 3.5 V, which means the drivers stay off while the Mega restarts.</span></span></label></li>
+        <li><label><input type="checkbox" id="b3"><span class="txt"><strong>Upload lens_z 1.1.</strong><span>Serial Monitor at 115200 baud, line ending “Newline”. Send <code>ping</code> and expect <code>OK lens_z 1.1</code>.</span></span></label></li>
+        <li><label><input type="checkbox" id="b4"><span class="txt"><strong><code>status</code> shows <code>sw 0000</code>.</strong><span>The digits are z1min, z1max, z2min, z2max.</span></span></label></li>
+        <li><label><input type="checkbox" id="b5"><span class="txt"><strong>Press each switch by hand.</strong><span>The right digit goes to 1 while you hold it. A wrong digit means swapped wires.</span></span></label></li>
+        <li><label><input type="checkbox" id="b6"><span class="txt"><strong>Unplug one switch.</strong><span>Its digit reads 1. That is the fail-safe working. Plug it back in.</span></span></label></li>
+      </ul>
+    </div>
+
+    <div class="stage" data-stage="c">
+      <div class="stage-head">
+        <h3>C · Motor supply on <span class="cond">motors still unplugged</span></h3>
+        <span class="count" aria-live="polite"></span>
+      </div>
+      <ul class="checks">
+        <li><label><input type="checkbox" id="c1"><span class="txt"><strong>Read RS off each carrier.</strong><span><code>R050</code> = 0.050 Ω, <code>R068</code> = 0.068 Ω, <code>R100</code> = 0.100 Ω.</span></span></label></li>
+        <li><label><input type="checkbox" id="c2"><span class="txt"><strong>Set VREF on each pot</strong>, measured to GND.<span>VREF = 8 × RS × I. For 1.0 A: 0.40 / 0.54 / 0.80 V. Start at 60–70 % of the motor's rated current.</span></span></label></li>
+        <li><label><input type="checkbox" id="c3"><span class="txt"><strong>Power everything off, then plug the motors in.</strong><span>Next: the bring-up in the README (direction, scale, <code>travel</code>), with the lens uncoupled.</span></span></label></li>
+      </ul>
+    </div>
+
+    <div class="toolbar"><button type="button" id="reset">Clear all ticks</button></div>
+  </div>
+</section>
+
+<footer>
+  <div>Firmware <code>lens_z 1.1</code> has not yet been compiled. Build it in the Arduino IDE (AccelStepper library) before relying on it.</div>
+  <div>Figures marked against the Allegro A4988 datasheet. Source: <code>xsphere-lens-z/docs/wiring.html</code></div>
+</footer>
+
+</main>
+
+<script>
+(function () {
+  var KEY = "lensz-wiring-checks-v1";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".checks input[type=checkbox]"));
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function update() {
+    document.querySelectorAll(".stage").forEach(function (stage) {
+      var cbs = stage.querySelectorAll("input[type=checkbox]");
+      var n = 0; cbs.forEach(function (c) { if (c.checked) n++; });
+      var el = stage.querySelector(".count");
+      el.textContent = n === cbs.length ? "✓ " + n + " / " + cbs.length : n + " / " + cbs.length;
+      el.classList.toggle("done", n === cbs.length);
+    });
+  }
+  boxes.forEach(function (cb) {
+    cb.checked = !!state[cb.id];
+    cb.addEventListener("change", function () { state[cb.id] = cb.checked; save(); update(); });
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    state = {}; boxes.forEach(function (cb) { cb.checked = false; }); save(); update();
+  });
+  update();
+})();
+</script>

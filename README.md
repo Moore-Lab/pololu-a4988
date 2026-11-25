@@ -4,6 +4,10 @@ Two stepper motors (**Z1** and **Z2**) driving **one lens along one axis**, with
 **two limit switches per motor**, on an **Arduino Mega 2560**. Firmware in
 [`firmware/lens_z/lens_z.ino`](firmware/lens_z/lens_z.ino).
 
+**Wiring schematic and bench checklist:** [`docs/wiring.html`](docs/wiring.html)
+(open it in a browser; four figures, every Mega pin, and the checks to run
+before motor power goes on).
+
 Derived from [Moore-Lab/Arduino-Stepper-Motors](https://github.com/Moore-Lab/Arduino-Stepper-Motors)
 (`06_17_2025.ino`), which drove an x/y stage with one switch per axis.
 
@@ -231,6 +235,14 @@ matters if you add it later.
 `#define ENABLE_ACTIVE_LOW 1` in the sketch is correct for these — leave it
 alone.
 
+**Recommended: a 10 kΩ from the ENABLE line up to 5 V** (one resistor; both
+drivers share D6). After a reset the Mega's pins float as inputs for the
+second or two the bootloader runs, and ENABLE has no internal pull [DS]. A
+reset happens *every time the DAQ opens the port*. Floating, the drivers may
+energise while STEP is floating too, and pick up stray steps. The pull-up
+holds them off until `setup()` drives D6. It is not required, but it costs
+one resistor.
+
 Worth knowing: STEP, DIR and MSx stay live regardless of ENABLE [DS]. The
 translator keeps counting while the FETs are off, so the chip's own idea of
 microstep position survives a disable. The firmware does not rely on that.
@@ -301,6 +313,8 @@ optical mount. If it skips steps, raise it.
 * **Output current is ±2 A absolute max [DS]**, with overcurrent protection
   tripping at ≥ 2.1 A and thermal shutdown at 165 °C [DS]. In practice a bare
   carrier handles roughly 1 A before it wants a heatsink and some air.
+* **The 100 µF is polarised.** The stripe on the can marks **−**: stripe to
+  GND, other leg to VMOT. Backwards, at 12–24 V, it heats and can vent.
 * **A 100 µF electrolytic across VMOT/GND, physically close to the driver,
   before you first apply motor power.** The datasheet asks for a bulk capacitor
   in parallel with a ceramic one, ceramic nearest the pins [DS]; on a carrier
@@ -332,7 +346,8 @@ that the things meant to stop the stage actually do.
    that SLEEP measures ~5 V). Confirm **MS1 and MS2 are tied to 5 V** and MS3
    is open, for 1/8. Fit the **100 µF across VMOT/GND**. Only then power down
    and plug the motors in.
-1. **Switches before motors.** Upload, open the serial monitor at **115200**,
+1. **Switches before motors.** Upload, open the serial monitor at **115200**
+   with the line ending set to **Newline**,
    send `status`. The `sw` field is four digits: `z1min z1max z2min z2max`.
    With nothing pressed it should read `0000`. Press each switch by hand and
    confirm the digit you expect is the one that changes. **Unplug one and
@@ -356,29 +371,43 @@ that the things meant to stop the stage actually do.
 
 ## Serial protocol
 
-115200 baud, newline-terminated. Every command ends with exactly **one** line
+115200 baud; a line ends at CR or LF, so any Serial Monitor setting except
+"No line ending" works. Every command ends with exactly **one** line
 beginning `OK` or `ERR`. Commands that start the motors emit one progress line
 first (`MOVING` / `HOMING` / `MEASURING`), so read lines until `OK` or `ERR`.
 
 | command | does |
 |---|---|
-| `ping` | `OK lens_z 1.0` |
+| `ping` | `OK lens_z 1.1` |
 | `status` | positions, the four switches, homed/moving/motors, soft limits |
-| `home` | both axes to their MIN switches; sets zero. **Required before any move** |
+| `home` | both axes to their MIN switches; sets zero. **Required before any move.** Works from anywhere, including sitting on MAX |
 | `travel` | measures MIN→MAX on each axis and sets the soft limits |
 | `move <mm>` | both axes to the same absolute position — the usual case |
 | `move <z1> <z2>` | axes independently, for tilt or to dial out an offset |
 | `jog <z1\|z2\|both> <dmm>` | relative, same limits apply |
 | `stop` | immediate, obeyed in any state |
-| `enable` / `disable` | energise / de-energise. `disable` clears the homed flag |
-| `speed <mm_per_s>` | clamped to the step-rate ceiling; reports what it got |
+| `enable` / `disable` | energise / de-energise. See below for what `disable` does to `homed` |
+| `speed <mm_per_s>` | speed for later moves; clamped to the step-rate ceiling, reports what it got |
 
 Errors: `ERR busy`, `ERR not_homed`, `ERR soft_limit <axis> <min> <max>`,
 `ERR on_limit <axis><min|max>`, `ERR limit <axis><min|max> at POS ...`,
-`ERR home <reason>`, `ERR unknown_command`.
+`ERR home <reason>`, `ERR unknown_command`, `ERR line_too_long` (over 63
+characters).
 
-`disable` clears `homed` on purpose: an un-energised motor can be back-driven
-and nothing would notice, so the position is no longer trustworthy.
+`ERR home` reasons:
+
+| reason | means |
+|---|---|
+| `switch_fault <axis>` | both of that axis's switches read tripped **before anything moved**. Nothing moves. Almost always an unplugged cable, which NC wiring reports as tripped on purpose |
+| `wrong_direction` | the axis found MAX while seeking MIN: DIR is inverted (`Zn_DIR_INVERT`), or MIN and MAX are swapped |
+| `no_min_switch` | 60 mm of seeking and MIN never tripped |
+| `min_stuck` | started on MIN and it was still tripped after 3 mm of crawling off: the MIN wire is cut, not pressed |
+
+**`disable` and `homed`** follow the idle policy. With `HOLD_WHEN_IDLE 0` (the
+default) the firmware already de-energises after every move and trusts the
+self-locking lead screw to hold, so an explicit `disable` keeps `homed` too.
+With `HOLD_WHEN_IDLE 1` you have decided the axis *can* be back-driven, so
+`disable` clears `homed` and the next move needs a `home`.
 
 ---
 
