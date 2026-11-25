@@ -14,6 +14,40 @@ absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
 
+## 2026-11-24 (late) — Full two-channel schematic; firmware names match it
+
+Lucas: the limit switches were missing from the schematic, and he has two
+motors, so he wanted one sheet with both motors and both drivers, reflected
+in the microcontroller code.
+
+- **Fig 2 is now the whole rig on one sheet:**
+  - the Mega, both A4988s and both PK243M-02BA motors (lead colours and
+    insulated taps);
+  - all four switches (NC to D7–D10, COM to ground);
+  - the 24 V supply with a 100 µF at each VMOT, and the ENABLE fork with its
+    10 kΩ pull-up.
+
+  Signals are drawn as wires. 5 V and ground use flags and ground symbols,
+  which keeps the sheet free of crossings. The generator is a script, so the
+  coordinates come from one table.
+- **Every Mega pin is labelled with its firmware `#define`.** The pin table on
+  the page and in the README now has a firmware column. The four-switch
+  harness figure added earlier in the evening was folded back out: the full
+  sheet carries all four switches, and the single-switch detail is Fig 4 again.
+- **Firmware:**
+  - `Z1_PUL_PIN`/`Z2_PUL_PIN` (TB6600 naming, inherited from the reference)
+    are now `Z1_STEP_PIN`/`Z2_STEP_PIN`, the A4988's name and the schematic's;
+  - the sketch's pin section opens with the same wiring table as Fig 2;
+  - no behaviour change, so the version stays 1.1.
+
+  The code already drove both channels (`stepper1` on D3/D2, `stepper2` on
+  D5/D4, and `sw_min`/`sw_max` for both axes on D7–D10), so the drawing now
+  matches it rather than the other way round.
+- Checked on the rendered page: 120 labels on the sheet, none overlapping,
+  none straddling a box edge, and one visual look at it.
+
+---
+
 ## 2026-11-24 (night) — Motors are Oriental Motor PK243M-02BA
 
 Taken from Oriental Motor's PK-series catalog (42 mm, 0.9° table); the PDF

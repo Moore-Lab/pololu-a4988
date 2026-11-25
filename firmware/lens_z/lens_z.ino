@@ -54,10 +54,33 @@
 //
 // D0/D1 are the USB serial port — never use them. D13 has the on-board LED and
 // its resistor, which spoils INPUT_PULLUP, so no endstop goes there.
+// ---------------------------------------------------------------------------
+// Wiring, both channels. This is Fig 2 of docs/wiring.html as a table; the
+// two must agree, so change them together.
+//
+//   Mega   define          goes to
+//   ----   -------------   ---------------------------------------------------
+//   D2     Z1_DIR_PIN      A4988 #1 (Z1) DIR
+//   D3     Z1_STEP_PIN     A4988 #1 (Z1) STEP
+//   D4     Z2_DIR_PIN      A4988 #2 (Z2) DIR
+//   D5     Z2_STEP_PIN     A4988 #2 (Z2) STEP
+//   D6     Z1_ENA_PIN      ENABLE on BOTH drivers; 10k to 5V recommended
+//          Z2_ENA_PIN
+//   D7     Z1_MIN_PIN      Z1 MIN limit switch, NC terminal  (COM to GND)
+//   D8     Z1_MAX_PIN      Z1 MAX limit switch, NC terminal
+//   D9     Z2_MIN_PIN      Z2 MIN limit switch, NC terminal
+//   D10    Z2_MAX_PIN      Z2 MAX limit switch, NC terminal
+//   5V     -               VDD, MS1, MS2 on both drivers  (MS3 open = 1/8 step)
+//   GND    -               common ground: drivers, switch COMs, supply minus
+//
+//   Each A4988: RST jumpered to SLP; VMOT to +24 V with 100 uF to GND.
+//   Each PK243M-02BA: BLK->1A, GRN->1B, RED->2A, BLU->2B; YEL and WHT
+//   (the centre taps) insulated, connected to nothing.
+// ---------------------------------------------------------------------------
 #define Z1_DIR_PIN 2
-#define Z1_PUL_PIN 3
+#define Z1_STEP_PIN 3
 #define Z2_DIR_PIN 4
-#define Z2_PUL_PIN 5
+#define Z2_STEP_PIN 5
 // One ENABLE line per driver, so that a board with per-driver enables (a
 // RAMPS 1.4, say) needs only these two numbers changed. Wired directly, both
 // drivers share D6 and the two writes below land on the same pin.
@@ -216,8 +239,8 @@ struct Endstop {
 #define Z1 0
 #define Z2 1
 
-AccelStepper stepper1(AccelStepper::DRIVER, Z1_PUL_PIN, Z1_DIR_PIN);
-AccelStepper stepper2(AccelStepper::DRIVER, Z2_PUL_PIN, Z2_DIR_PIN);
+AccelStepper stepper1(AccelStepper::DRIVER, Z1_STEP_PIN, Z1_DIR_PIN);
+AccelStepper stepper2(AccelStepper::DRIVER, Z2_STEP_PIN, Z2_DIR_PIN);
 AccelStepper *axis[NAXIS] = {&stepper1, &stepper2};
 MultiStepper pair;                       // coordinated moves, so the lens stays square
 

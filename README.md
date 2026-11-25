@@ -82,18 +82,22 @@ boards unchanged), they sit in one block, and the **GND pin immediately beside
 D13** is four pins from the endstop group — which keeps the pull-up return
 paths short, next to stepper cables that are electrically loud.
 
-| Arduino | goes to | note |
-|---|---|---|
-| D2 | Z1 driver **DIR** | |
-| D3 | Z1 driver **STEP** / **PUL** | |
-| D4 | Z2 driver **DIR** | |
-| D5 | Z2 driver **STEP** / **PUL** | |
-| D6 | **ENABLE** on *both* drivers | active LOW by default |
-| D7 | Z1 **MIN** switch | |
-| D8 | Z1 **MAX** switch | |
-| D9 | Z2 **MIN** switch | |
-| D10 | Z2 **MAX** switch | |
-| GND | switch commons, driver logic GND, **motor supply −** | |
+| Mega | firmware | goes to | note |
+|---|---|---|---|
+| D2 | `Z1_DIR_PIN` | Z1 driver **DIR** | |
+| D3 | `Z1_STEP_PIN` | Z1 driver **STEP** | |
+| D4 | `Z2_DIR_PIN` | Z2 driver **DIR** | |
+| D5 | `Z2_STEP_PIN` | Z2 driver **STEP** | |
+| D6 | `Z1_ENA_PIN`, `Z2_ENA_PIN` | **ENABLE** on *both* drivers | active LOW; 10 kΩ to 5 V recommended |
+| D7 | `Z1_MIN_PIN` | Z1 **MIN** switch, NC | COM to GND |
+| D8 | `Z1_MAX_PIN` | Z1 **MAX** switch, NC | COM to GND |
+| D9 | `Z2_MIN_PIN` | Z2 **MIN** switch, NC | COM to GND |
+| D10 | `Z2_MAX_PIN` | Z2 **MAX** switch, NC | COM to GND |
+| 5V | | VDD, MS1, MS2 on both drivers | |
+| GND | | switch commons, driver logic GND, **motor supply −** | |
+
+The full two-channel schematic is Fig 2 of [`docs/wiring.html`](docs/wiring.html),
+and the same table sits at the top of the sketch.
 
 Everything else — D11–D53, A0–A15, the three spare hardware serial ports and
 I2C — is free.

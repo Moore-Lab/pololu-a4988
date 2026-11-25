@@ -81,7 +81,7 @@ figure.fig { margin: 0; background: var(--panel); border: 1px solid var(--rule);
   background-size: 20px 20px;
 }
 .fig svg { display: block; width: 100%; height: auto; }
-.f1 svg { min-width: 620px; } .f2 svg { min-width: 720px; } .f3 svg { min-width: 540px; } .f4 svg { min-width: 520px; }
+.f1 svg { min-width: 620px; } .f2 svg { min-width: 880px; } .f3 svg { min-width: 540px; } .f4 svg { min-width: 520px; } .f5 svg { min-width: 500px; }
 figcaption { border-top: 1px solid var(--rule); padding: 12px 16px 14px; font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
 figcaption b { font-family: var(--mono); font-weight: 600; color: var(--ink); margin-right: 6px; }
 
@@ -248,127 +248,228 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <!-- ============================ FIG 2 ============================ -->
 <section>
   <div class="sec-head">
-    <h2>One channel, every wire</h2>
-    <p>Channel Z1. Z2 is identical except STEP comes from <code>D5</code> and DIR from <code>D4</code>. ENABLE (<code>D6</code>), 5 V and ground are the same wires, shared.</p>
+    <h2>Full schematic: both channels</h2>
+    <p>Everything on one sheet: the Mega, both A4988 drivers, both motors, all four limit switches and the motor supply. The grey names inside the Mega are the <code>#define</code>s in <code>lens_z.ino</code> that bind each pin.</p>
   </div>
   <figure class="fig f2">
     <div class="figscroll">
-      <svg viewBox="0 0 900 520" role="img" aria-label="Schematic of channel Z1: Mega D3 to STEP, D2 to DIR, D6 to ENABLE with a recommended 10 kilohm pull-up to 5 V, 5 V to VDD; MS1 and MS2 to 5 V, MS3 open, RST jumpered to SLP; the motor supply to VMOT with a 100 microfarad capacitor to ground; coil A on 1A and 1B, coil B on 2A and 2B; the Mega ground, driver ground and supply negative on one bus.">
-        <!-- ground bus -->
-        <line class="w w-gnd bus" x1="70" y1="480" x2="800" y2="480"/>
-        <text class="t-cap" x="72" y="503">COMMON GROUND · ONE NET</text>
-
-        <!-- Arduino -->
-        <rect class="blk" x="40" y="170" width="170" height="230" rx="6"/>
-        <text class="t-pin t-sig" x="202" y="219" text-anchor="end">D3</text>
-        <text class="t-pin t-sig" x="202" y="254" text-anchor="end">D2</text>
-        <text class="t-pin t-sig" x="202" y="289" text-anchor="end">D6</text>
-        <text class="t-pin t-pwr" x="202" y="349" text-anchor="end">5V</text>
-        <text class="t-lbl t-mute" x="56" y="300">USB · DAQ PC</text>
-        <text class="t-pin" x="70" y="392" text-anchor="middle">GND</text>
-        <text class="t-title" x="133" y="366" text-anchor="middle">Arduino</text>
-        <text class="t-title" x="133" y="388" text-anchor="middle">Mega 2560</text>
-
-        <!-- signals -->
-        <line class="w w-sig" x1="210" y1="215" x2="360" y2="215"/>
-        <text class="t-lbl t-sig" x="300" y="208" text-anchor="middle">STEP</text>
-        <line class="w w-sig" x1="210" y1="250" x2="360" y2="250"/>
-        <text class="t-lbl t-sig" x="300" y="243" text-anchor="middle">DIR</text>
-        <line class="w w-sig" x1="210" y1="285" x2="360" y2="285"/>
-        <text class="t-lbl t-sig" x="300" y="278" text-anchor="middle">ENABLE · also Z2</text>
-        <line class="w w-pwr" x1="210" y1="345" x2="360" y2="345"/>
-        <text class="t-lbl t-pwr" x="340" y="338" text-anchor="middle">5 V</text>
-
-        <!-- recommended pull-up on ENABLE -->
-        <circle class="dot dot-sig" cx="240" cy="285" r="3.5"/>
-        <line class="w w-chk" x1="240" y1="285" x2="240" y2="297"/>
-        <rect class="res" x="234" y="297" width="12" height="36"/>
-        <line class="w w-chk" x1="240" y1="333" x2="240" y2="345"/>
-        <circle class="dot dot-pwr" cx="240" cy="345" r="3.5"/>
-        <text class="t-lbl t-chk" x="254" y="311">10 kΩ</text>
-        <text class="t-lbl t-chk" x="254" y="325">recommended</text>
-
-        <!-- Arduino ground -->
-        <line class="w w-gnd" x1="70" y1="400" x2="70" y2="480"/>
-        <circle class="dot dot-gnd" cx="70" cy="480" r="4"/>
-
-        <!-- motor -->
-        <line class="w w-mot" x1="430" y1="115" x2="430" y2="170"/>
-        <line class="w w-mot" x1="470" y1="115" x2="470" y2="170"/>
-        <line class="w w-mot" x1="530" y1="115" x2="530" y2="170"/>
-        <line class="w w-mot" x1="570" y1="115" x2="570" y2="170"/>
-        <rect class="blk" x="400" y="20" width="200" height="95" rx="6"/>
-        <text class="t-title" x="500" y="42" text-anchor="middle">PK243M-02BA · Z1</text>
-        <text class="t-lbl t-mute" x="500" y="60" text-anchor="middle">0.9° · 0.42 A · 6 leads</text>
-        <text class="t-lbl" x="450" y="84" text-anchor="middle">phase A</text>
-        <text class="t-lbl" x="550" y="84" text-anchor="middle">phase B</text>
-        <path class="w w-thin" d="M430 115 V100 H470 V115 M530 115 V100 H570 V115"/>
-        <path class="w w-chk" d="M450 100 V124 M444 124 h12 M550 100 V124 M544 124 h12"/>
-        <text class="t-lbl t-chk" x="450" y="139" text-anchor="middle">YEL</text>
-        <text class="t-lbl t-chk" x="550" y="139" text-anchor="middle">WHT</text>
-        <text class="t-lbl t-mute" x="434" y="161">BLK</text>
-        <text class="t-lbl t-mute" x="474" y="161">GRN</text>
-        <text class="t-lbl t-mute" x="534" y="161">RED</text>
-        <text class="t-lbl t-mute" x="574" y="161">BLU</text>
-
-        <!-- driver -->
-        <rect class="blk" x="360" y="170" width="280" height="230" rx="6"/>
-        <text class="t-title" x="500" y="278" text-anchor="middle">A4988 carrier</text>
-        <text class="t-lbl t-mute" x="500" y="296" text-anchor="middle">channel Z1</text>
-        <text class="t-pin" x="372" y="219">STEP</text>
-        <text class="t-pin" x="372" y="254">DIR</text>
-        <text class="t-pin" x="372" y="289">ENABLE</text>
-        <text class="t-pin" x="372" y="349">VDD</text>
-        <text class="t-pin" x="430" y="190" text-anchor="middle">1A</text>
-        <text class="t-pin" x="470" y="190" text-anchor="middle">1B</text>
-        <text class="t-pin" x="530" y="190" text-anchor="middle">2A</text>
-        <text class="t-pin" x="570" y="190" text-anchor="middle">2B</text>
-        <text class="t-pin" x="628" y="219" text-anchor="end">VMOT</text>
-        <text class="t-pin" x="395" y="390" text-anchor="middle">GND</text>
-        <text class="t-pin" x="445" y="390" text-anchor="middle">MS1</text>
-        <text class="t-pin" x="490" y="390" text-anchor="middle">MS2</text>
-        <text class="t-pin" x="535" y="390" text-anchor="middle">MS3</text>
-        <text class="t-pin" x="580" y="390" text-anchor="middle">RST</text>
-        <text class="t-pin" x="620" y="390" text-anchor="middle">SLP</text>
-
-        <!-- straps on the driver -->
-        <line class="w w-gnd" x1="395" y1="400" x2="395" y2="480"/>
-        <circle class="dot dot-gnd" cx="395" cy="480" r="4"/>
-        <line class="w w-pwr" x1="445" y1="400" x2="445" y2="418"/>
-        <text class="t-lbl t-pwr" x="445" y="432" text-anchor="middle">5 V</text>
-        <line class="w w-pwr" x1="490" y1="400" x2="490" y2="418"/>
-        <text class="t-lbl t-pwr" x="490" y="432" text-anchor="middle">5 V</text>
-        <line class="w w-thin" x1="535" y1="400" x2="535" y2="410"/>
-        <text class="t-lbl t-mute" x="535" y="432" text-anchor="middle">open</text>
-        <polyline class="w w-chk" points="580,400 580,420 620,420 620,400"/>
-        <text class="t-lbl t-chk" x="600" y="436" text-anchor="middle">jumper</text>
-
-        <!-- motor supply and its capacitor -->
-        <line class="w w-pwr" x1="640" y1="215" x2="720" y2="215"/>
-        <circle class="dot dot-pwr" cx="685" cy="215" r="3.5"/>
-        <line class="w w-pwr" x1="685" y1="215" x2="685" y2="262"/>
-        <line class="plate plate-pwr" x1="673" y1="262" x2="697" y2="262"/>
-        <path class="plate" d="M673 273 Q685 266 697 273"/>
-        <line class="w w-gnd" x1="685" y1="270" x2="685" y2="480"/>
-        <circle class="dot dot-gnd" cx="685" cy="480" r="4"/>
-        <text class="t-lbl t-pwr" x="668" y="259" text-anchor="end">+</text>
-        <text class="t-lbl" x="702" y="266">100 µF</text>
-        <text class="t-lbl t-mute" x="702" y="280">at the board</text>
-
-        <rect class="blk" x="720" y="180" width="160" height="70" rx="6"/>
-        <text class="t-title" x="808" y="205" text-anchor="middle">Motor supply</text>
-        <text class="t-pin" x="808" y="225" text-anchor="middle">12–24 V DC</text>
-        <text class="t-pin t-pwr" x="729" y="219">+</text>
-        <text class="t-pin" x="800" y="245" text-anchor="middle">−</text>
-        <line class="w w-gnd" x1="800" y1="250" x2="800" y2="480"/>
-        <circle class="dot dot-gnd" cx="800" cy="480" r="4"/>
+      <svg viewBox="0 0 1080 790" role="img" aria-label="Full schematic. An Arduino Mega 2560 drives two A4988 drivers. Z1: D3 to STEP, D2 to DIR. Z2: D5 to STEP, D4 to DIR. D6 goes to ENABLE on both, with a recommended 10 kilohm pull-up to 5 V. D7, D8, D9 and D10 go to the NC terminals of the Z1 MIN, Z1 MAX, Z2 MIN and Z2 MAX switches, whose COM terminals go to ground. On both drivers, VDD, MS1 and MS2 go to 5 V, MS3 is open and RST is jumpered to SLP. A 24 V motor supply feeds both VMOT pins, each with 100 microfarads to ground. Each PK243M-02BA motor has black, green, red and blue on 1A, 1B, 2A and 2B, with yellow and white taped off.">
+        <!-- limit switches: NC to the pin, COM to ground, NO unused -->
+        <line class="w w-sig" x1="170" y1="235" x2="230" y2="235"/>
+        <path class="w w-gnd" d="M70 260 v12 M61 272 h18 M64 276 h12 M67 280 h6"/>
+        <line class="w w-thin" x1="140" y1="260" x2="140" y2="268"/>
+        <line class="w w-sig" x1="170" y1="375" x2="230" y2="375"/>
+        <path class="w w-gnd" d="M70 400 v12 M61 412 h18 M64 416 h12 M67 420 h6"/>
+        <line class="w w-thin" x1="140" y1="400" x2="140" y2="408"/>
+        <line class="w w-sig" x1="170" y1="545" x2="230" y2="545"/>
+        <path class="w w-gnd" d="M70 570 v12 M61 582 h18 M64 586 h12 M67 590 h6"/>
+        <line class="w w-thin" x1="140" y1="570" x2="140" y2="578"/>
+        <line class="w w-sig" x1="170" y1="690" x2="230" y2="690"/>
+        <path class="w w-gnd" d="M70 715 v12 M61 727 h18 M64 731 h12 M67 735 h6"/>
+        <line class="w w-thin" x1="140" y1="715" x2="140" y2="723"/>
+        <!-- STEP and DIR, one pair per driver -->
+        <line class="w w-sig" x1="400" y1="285" x2="560" y2="285"/>
+        <line class="w w-sig" x1="400" y1="320" x2="560" y2="320"/>
+        <line class="w w-sig" x1="400" y1="615" x2="560" y2="615"/>
+        <line class="w w-sig" x1="400" y1="650" x2="560" y2="650"/>
+        <!-- 5 V, the recommended pull-up, and ENABLE forking to both drivers -->
+        <line class="w w-pwr" x1="400" y1="410" x2="450" y2="410"/>
+        <line class="w w-chk" x1="450" y1="410" x2="450" y2="420"/>
+        <line class="w w-chk" x1="450" y1="450" x2="450" y2="460"/>
+        <line class="w w-sig" x1="400" y1="460" x2="530" y2="460"/>
+        <polyline class="w w-sig" points="560,360 530,360 530,575 560,575"/>
+        <circle class="dot dot-sig" cx="450" cy="460" r="3.5"/>
+        <circle class="dot dot-sig" cx="530" cy="460" r="3.5"/>
+        <!-- VDD to 5 V on each driver -->
+        <line class="w w-pwr" x1="540" y1="240" x2="560" y2="240"/>
+        <line class="w w-pwr" x1="540" y1="695" x2="560" y2="695"/>
+        <!-- straps: Z1 on its top edge, Z2 on its bottom edge -->
+        <line class="w w-pwr" x1="620" y1="210" x2="620" y2="192"/>
+        <line class="w w-pwr" x1="620" y1="725" x2="620" y2="743"/>
+        <line class="w w-pwr" x1="660" y1="210" x2="660" y2="192"/>
+        <line class="w w-pwr" x1="660" y1="725" x2="660" y2="743"/>
+        <line class="w w-thin" x1="700" y1="210" x2="700" y2="200"/>
+        <line class="w w-thin" x1="700" y1="725" x2="700" y2="735"/>
+        <polyline class="w w-chk" points="740,210 740,190 780,190 780,210"/>
+        <polyline class="w w-chk" points="740,725 740,745 780,745 780,725"/>
+        <path class="w w-gnd" d="M600 390 v12 M591 402 h18 M594 406 h12 M597 410 h6"/>
+        <path class="w w-gnd" d="M585 725 v12 M576 737 h18 M579 741 h12 M582 745 h6"/>
+        <!-- motor supply: one +24 V bus to both VMOT pins, 100 uF at each -->
+        <line class="w w-pwr" x1="770" y1="390" x2="770" y2="460"/>
+        <line class="w w-pwr" x1="770" y1="545" x2="770" y2="460"/>
+        <line class="w w-pwr" x1="770" y1="460" x2="900" y2="460"/>
+        <circle class="dot dot-pwr" cx="770" cy="460" r="3.5"/>
+        <circle class="dot dot-pwr" cx="770" cy="415" r="3.5"/>
+        <line class="w w-pwr" x1="770" y1="415" x2="810" y2="415"/>
+        <line class="w w-pwr" x1="810" y1="415" x2="810" y2="423"/>
+        <line class="plate plate-pwr" x1="798" y1="423" x2="822" y2="423"/>
+        <path class="plate" d="M798 433 Q810 426 822 433"/>
+        <path class="w w-gnd" d="M810 430 v12 M801 442 h18 M804 446 h12 M807 450 h6"/>
+        <circle class="dot dot-pwr" cx="770" cy="490" r="3.5"/>
+        <line class="w w-pwr" x1="770" y1="490" x2="810" y2="490"/>
+        <line class="w w-pwr" x1="810" y1="490" x2="810" y2="498"/>
+        <line class="plate plate-pwr" x1="798" y1="498" x2="822" y2="498"/>
+        <path class="plate" d="M798 508 Q810 501 822 508"/>
+        <path class="w w-gnd" d="M810 505 v12 M801 517 h18 M804 521 h12 M807 525 h6"/>
+        <path class="w w-gnd" d="M980 490 v12 M971 502 h18 M974 506 h12 M977 510 h6"/>
+        <!-- motor leads -->
+        <line class="w w-mot" x1="800" y1="255" x2="900" y2="255"/>
+        <line class="w w-mot" x1="800" y1="285" x2="900" y2="285"/>
+        <line class="w w-mot" x1="800" y1="320" x2="900" y2="320"/>
+        <line class="w w-mot" x1="800" y1="350" x2="900" y2="350"/>
+        <line class="w w-mot" x1="800" y1="590" x2="900" y2="590"/>
+        <line class="w w-mot" x1="800" y1="620" x2="900" y2="620"/>
+        <line class="w w-mot" x1="800" y1="655" x2="900" y2="655"/>
+        <line class="w w-mot" x1="800" y1="685" x2="900" y2="685"/>
+        <rect class="blk" x="40" y="210" width="130" height="50" rx="5"/>
+        <rect class="blk" x="40" y="350" width="130" height="50" rx="5"/>
+        <rect class="blk" x="40" y="520" width="130" height="50" rx="5"/>
+        <rect class="blk" x="40" y="665" width="130" height="50" rx="5"/>
+        <rect class="blk" x="230" y="200" width="170" height="560" rx="6"/>
+        <rect class="blk" x="560" y="210" width="240" height="180" rx="6"/>
+        <rect class="blk" x="560" y="545" width="240" height="180" rx="6"/>
+        <rect class="blk" x="900" y="230" width="160" height="145" rx="6"/>
+        <rect class="blk" x="900" y="565" width="160" height="145" rx="6"/>
+        <rect class="blk" x="900" y="430" width="160" height="60" rx="6"/>
+        <rect class="res" x="444" y="420" width="12" height="30"/>
+        <text class="t-title" x="92" y="231" text-anchor="middle">Z1 MIN</text>
+        <text class="t-lbl t-sig" x="162" y="239" text-anchor="end">NC</text>
+        <text class="t-lbl" x="70" y="254" text-anchor="middle">COM</text>
+        <text class="t-lbl t-mute" x="140" y="254" text-anchor="middle">NO</text>
+        <text class="t-pin t-sig" x="238" y="239">D7</text>
+        <text class="t-lbl t-mute" x="266" y="239">Z1_MIN_PIN</text>
+        <text class="t-title" x="92" y="371" text-anchor="middle">Z1 MAX</text>
+        <text class="t-lbl t-sig" x="162" y="379" text-anchor="end">NC</text>
+        <text class="t-lbl" x="70" y="394" text-anchor="middle">COM</text>
+        <text class="t-lbl t-mute" x="140" y="394" text-anchor="middle">NO</text>
+        <text class="t-pin t-sig" x="238" y="379">D8</text>
+        <text class="t-lbl t-mute" x="266" y="379">Z1_MAX_PIN</text>
+        <text class="t-title" x="92" y="541" text-anchor="middle">Z2 MIN</text>
+        <text class="t-lbl t-sig" x="162" y="549" text-anchor="end">NC</text>
+        <text class="t-lbl" x="70" y="564" text-anchor="middle">COM</text>
+        <text class="t-lbl t-mute" x="140" y="564" text-anchor="middle">NO</text>
+        <text class="t-pin t-sig" x="238" y="549">D9</text>
+        <text class="t-lbl t-mute" x="266" y="549">Z2_MIN_PIN</text>
+        <text class="t-title" x="92" y="686" text-anchor="middle">Z2 MAX</text>
+        <text class="t-lbl t-sig" x="162" y="694" text-anchor="end">NC</text>
+        <text class="t-lbl" x="70" y="709" text-anchor="middle">COM</text>
+        <text class="t-lbl t-mute" x="140" y="709" text-anchor="middle">NO</text>
+        <text class="t-pin t-sig" x="238" y="694">D10</text>
+        <text class="t-lbl t-mute" x="266" y="694">Z2_MAX_PIN</text>
+        <text class="t-pin t-sig" x="392" y="289" text-anchor="end">D3</text>
+        <text class="t-lbl t-mute" x="368" y="289" text-anchor="end">Z1_STEP_PIN</text>
+        <text class="t-pin t-sig" x="392" y="324" text-anchor="end">D2</text>
+        <text class="t-lbl t-mute" x="368" y="324" text-anchor="end">Z1_DIR_PIN</text>
+        <text class="t-pin t-pwr" x="392" y="414" text-anchor="end">5V</text>
+        <text class="t-pin t-sig" x="392" y="464" text-anchor="end">D6</text>
+        <text class="t-lbl t-mute" x="368" y="464" text-anchor="end">Z1/Z2_ENA_PIN</text>
+        <text class="t-pin t-sig" x="392" y="619" text-anchor="end">D4</text>
+        <text class="t-lbl t-mute" x="368" y="619" text-anchor="end">Z2_DIR_PIN</text>
+        <text class="t-pin t-sig" x="392" y="654" text-anchor="end">D5</text>
+        <text class="t-lbl t-mute" x="368" y="654" text-anchor="end">Z2_STEP_PIN</text>
+        <text class="t-lbl t-mute" x="325" y="712" text-anchor="middle">USB · DAQ PC</text>
+        <text class="t-title" x="325" y="732" text-anchor="middle">Arduino</text>
+        <text class="t-title" x="325" y="752" text-anchor="middle">Mega 2560</text>
+        <text class="t-pin" x="260" y="752" text-anchor="middle">GND</text>
+        <path class="w w-gnd" d="M260 760 v12 M251 772 h18 M254 776 h12 M257 780 h6"/>
+        <text class="t-lbl t-pwr" x="425" y="403" text-anchor="middle">+5 V</text>
+        <text class="t-lbl t-chk" x="462" y="432">10 kΩ</text>
+        <text class="t-lbl t-chk" x="462" y="446">pull-up</text>
+        <text class="t-lbl t-sig" x="490" y="474" text-anchor="middle">ENABLE</text>
+        <text class="t-lbl t-sig" x="480" y="279" text-anchor="middle">STEP</text>
+        <text class="t-lbl t-sig" x="480" y="644" text-anchor="middle">STEP</text>
+        <text class="t-lbl t-sig" x="480" y="314" text-anchor="middle">DIR</text>
+        <text class="t-lbl t-sig" x="480" y="609" text-anchor="middle">DIR</text>
+        <text class="t-lbl t-pwr" x="536" y="244" text-anchor="end">+5V</text>
+        <text class="t-lbl t-pwr" x="536" y="699" text-anchor="end">+5V</text>
+        <text class="t-title" x="680" y="300" text-anchor="middle">A4988 · Z1</text>
+        <text class="t-lbl t-mute" x="680" y="318" text-anchor="middle">Pololu carrier</text>
+        <text class="t-pin" x="572" y="244">VDD</text>
+        <text class="t-pin" x="572" y="289">STEP</text>
+        <text class="t-pin" x="572" y="324">DIR</text>
+        <text class="t-pin" x="572" y="364">ENABLE</text>
+        <text class="t-pin" x="788" y="259" text-anchor="end">1A</text>
+        <text class="t-pin" x="788" y="289" text-anchor="end">1B</text>
+        <text class="t-pin" x="788" y="324" text-anchor="end">2A</text>
+        <text class="t-pin" x="788" y="354" text-anchor="end">2B</text>
+        <text class="t-lbl t-mute" x="842" y="250">BLK</text>
+        <text class="t-lbl t-mute" x="842" y="280">GRN</text>
+        <text class="t-lbl t-mute" x="842" y="315">RED</text>
+        <text class="t-lbl t-mute" x="842" y="345">BLU</text>
+        <text class="t-title" x="680" y="640" text-anchor="middle">A4988 · Z2</text>
+        <text class="t-lbl t-mute" x="680" y="658" text-anchor="middle">Pololu carrier</text>
+        <text class="t-pin" x="572" y="579">ENABLE</text>
+        <text class="t-pin" x="572" y="619">DIR</text>
+        <text class="t-pin" x="572" y="654">STEP</text>
+        <text class="t-pin" x="572" y="699">VDD</text>
+        <text class="t-pin" x="788" y="594" text-anchor="end">1A</text>
+        <text class="t-pin" x="788" y="624" text-anchor="end">1B</text>
+        <text class="t-pin" x="788" y="659" text-anchor="end">2A</text>
+        <text class="t-pin" x="788" y="689" text-anchor="end">2B</text>
+        <text class="t-lbl t-mute" x="842" y="585">BLK</text>
+        <text class="t-lbl t-mute" x="842" y="615">GRN</text>
+        <text class="t-lbl t-mute" x="842" y="650">RED</text>
+        <text class="t-lbl t-mute" x="842" y="680">BLU</text>
+        <text class="t-pin" x="620" y="228" text-anchor="middle">MS1</text>
+        <text class="t-pin" x="620" y="716" text-anchor="middle">MS1</text>
+        <text class="t-lbl t-pwr" x="620" y="184" text-anchor="middle">+5V</text>
+        <text class="t-lbl t-pwr" x="620" y="757" text-anchor="middle">+5V</text>
+        <text class="t-pin" x="660" y="228" text-anchor="middle">MS2</text>
+        <text class="t-pin" x="660" y="716" text-anchor="middle">MS2</text>
+        <text class="t-lbl t-pwr" x="660" y="184" text-anchor="middle">+5V</text>
+        <text class="t-lbl t-pwr" x="660" y="757" text-anchor="middle">+5V</text>
+        <text class="t-pin" x="700" y="228" text-anchor="middle">MS3</text>
+        <text class="t-pin" x="700" y="716" text-anchor="middle">MS3</text>
+        <text class="t-lbl t-mute" x="700" y="184" text-anchor="middle">open</text>
+        <text class="t-lbl t-mute" x="700" y="757" text-anchor="middle">open</text>
+        <text class="t-pin" x="740" y="228" text-anchor="middle">RST</text>
+        <text class="t-pin" x="740" y="716" text-anchor="middle">RST</text>
+        <text class="t-pin" x="780" y="228" text-anchor="middle">SLP</text>
+        <text class="t-pin" x="780" y="716" text-anchor="middle">SLP</text>
+        <text class="t-lbl t-chk" x="760" y="182" text-anchor="middle">jumper</text>
+        <text class="t-lbl t-chk" x="760" y="761" text-anchor="middle">jumper</text>
+        <text class="t-pin" x="600" y="382" text-anchor="middle">GND</text>
+        <text class="t-pin" x="770" y="382" text-anchor="middle">VMOT</text>
+        <text class="t-pin" x="770" y="562" text-anchor="middle">VMOT</text>
+        <text class="t-pin" x="585" y="716" text-anchor="middle">GND</text>
+        <text class="t-lbl t-pwr" x="794" y="421" text-anchor="end">+</text>
+        <text class="t-lbl" x="828" y="436">100 µF</text>
+        <text class="t-lbl t-pwr" x="794" y="496" text-anchor="end">+</text>
+        <text class="t-lbl" x="828" y="511">100 µF</text>
+        <text class="t-lbl t-pwr" x="860" y="452" text-anchor="middle">+24 V</text>
+        <text class="t-title" x="980" y="455" text-anchor="middle">Motor supply</text>
+        <text class="t-pin" x="980" y="475" text-anchor="middle">24 V DC</text>
+        <text class="t-pin t-pwr" x="908" y="464">+</text>
+        <text class="t-pin" x="994" y="504">−</text>
+        <path class="w w-thin" d="M900 255 H915 V285 H900 M900 320 H915 V350 H900"/>
+        <line class="w w-chk" x1="915" y1="270" x2="935" y2="270"/>
+        <line class="w w-chk" x1="935" y1="264" x2="935" y2="276"/>
+        <text class="t-lbl t-chk" x="941" y="274">YEL</text>
+        <line class="w w-chk" x1="915" y1="335" x2="935" y2="335"/>
+        <line class="w w-chk" x1="935" y1="329" x2="935" y2="341"/>
+        <text class="t-lbl t-chk" x="941" y="339">WHT</text>
+        <text class="t-title" x="1005" y="262" text-anchor="middle">Motor Z1</text>
+        <text class="t-lbl t-mute" x="1005" y="282" text-anchor="middle">PK243M-02BA</text>
+        <text class="t-lbl t-mute" x="1005" y="300" text-anchor="middle">0.9° · 0.42 A</text>
+        <text class="t-lbl t-chk" x="1005" y="320" text-anchor="middle">taps: tape off</text>
+        <path class="w w-thin" d="M900 590 H915 V620 H900 M900 655 H915 V685 H900"/>
+        <line class="w w-chk" x1="915" y1="605" x2="935" y2="605"/>
+        <line class="w w-chk" x1="935" y1="599" x2="935" y2="611"/>
+        <text class="t-lbl t-chk" x="941" y="609">YEL</text>
+        <line class="w w-chk" x1="915" y1="670" x2="935" y2="670"/>
+        <line class="w w-chk" x1="935" y1="664" x2="935" y2="676"/>
+        <text class="t-lbl t-chk" x="941" y="674">WHT</text>
+        <text class="t-title" x="1005" y="597" text-anchor="middle">Motor Z2</text>
+        <text class="t-lbl t-mute" x="1005" y="617" text-anchor="middle">PK243M-02BA</text>
+        <text class="t-lbl t-mute" x="1005" y="635" text-anchor="middle">0.9° · 0.42 A</text>
+        <text class="t-lbl t-chk" x="1005" y="655" text-anchor="middle">taps: tape off</text>
       </svg>
     </div>
     <figcaption>
-      <div><b>Fig 2</b>MS1 and MS2 at 5 V with MS3 open selects 1/8 microstepping, which matches <code>MICROSTEPS 8</code>. The chip pulls all three low internally, so a loose MS wire silently becomes full step.</div>
-      <div>The 10 kΩ holds ENABLE high, so the outputs stay off while the Mega's pins float during a reset. A reset happens every time the DAQ opens the port. One resistor serves both drivers.</div>
-      <div>The PK243M-02BA has six leads. Yellow and white are the centre taps of the two phases: insulate each end on its own and connect nothing to them. That is bipolar series, rated 0.42 A per phase. Either 12 V or 24 V runs it at these speeds. Oriental Motor measures its torque curve at 24 V.</div>
-      <div>The ground bus can run through the carriers. Wire supply − to each driver's top GND pin and Mega GND to each bottom GND pin; the board joins the two, as in Pololu's diagram.</div>
+      <div><b>Fig 2</b>A red <code>+5V</code> label is a wire to the Mega's 5V pin. Every ground symbol is the same common ground. In practice, run supply − to each driver's top GND pin and Mega GND to each bottom GND pin; the carrier joins the two.</div>
+      <div>MS1 and MS2 at 5 V with MS3 open selects 1/8 step, which matches <code>MICROSTEPS 8</code>. The chip pulls all three low internally, so a loose MS wire silently becomes full step.</div>
+      <div>The 10 kΩ holds ENABLE high, so the drivers stay off while the Mega's pins float during a reset. The DAQ resets the Mega every time it opens the port. One resistor serves both drivers. It is recommended, not required.</div>
+      <div>Yellow and white are the motors' centre taps: insulate each end on its own. Black, green, red and blue go to 1A, 1B, 2A and 2B. Either 12 V or 24 V runs the motors at these speeds; Oriental Motor measures the torque curve at 24 V.</div>
     </figcaption>
   </figure>
 </section>
@@ -479,7 +580,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <section>
   <div class="sec-head">
     <h2>Each limit switch</h2>
-    <p>Four of these: <code>D7</code> Z1 MIN, <code>D8</code> Z1 MAX, <code>D9</code> Z2 MIN, <code>D10</code> Z2 MAX. Use the <strong>NC</strong> terminal, so a cut wire reads as a tripped switch.</p>
+    <p>All four are wired alike: <strong>NC</strong> to its pin, COM to ground, NO left empty. With NC, a cut wire reads as a tripped switch. MIN is the end each axis homes to. Homing both axes onto their MIN switches levels the mount, so set Z1 MIN and Z2 MIN at the same height.</p>
   </div>
   <div class="split">
     <figure class="fig f4">
@@ -539,23 +640,24 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <section>
   <div class="sec-head">
     <h2>Every Mega pin in use</h2>
+    <p>The same map as the top of <code>firmware/lens_z/lens_z.ino</code>.</p>
   </div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Mega pin</th><th>goes to</th><th>note</th></tr></thead>
+      <thead><tr><th>Mega pin</th><th>firmware</th><th>goes to</th><th>note</th></tr></thead>
       <tbody>
-        <tr><td class="pin c-sig">D2</td><td>Z1 DIR</td><td></td></tr>
-        <tr><td class="pin c-sig">D3</td><td>Z1 STEP</td><td></td></tr>
-        <tr><td class="pin c-sig">D4</td><td>Z2 DIR</td><td></td></tr>
-        <tr><td class="pin c-sig">D5</td><td>Z2 STEP</td><td></td></tr>
-        <tr><td class="pin c-sig">D6</td><td>ENABLE on <em>both</em> drivers</td><td>low = on. 10 kΩ to 5 V recommended</td></tr>
-        <tr><td class="pin c-sig">D7</td><td>Z1 MIN switch, NC</td><td>COM to GND</td></tr>
-        <tr><td class="pin c-sig">D8</td><td>Z1 MAX switch, NC</td><td>COM to GND</td></tr>
-        <tr><td class="pin c-sig">D9</td><td>Z2 MIN switch, NC</td><td>COM to GND</td></tr>
-        <tr><td class="pin c-sig">D10</td><td>Z2 MAX switch, NC</td><td>COM to GND</td></tr>
-        <tr><td class="pin c-pwr">5V</td><td>VDD, MS1, MS2 on both drivers</td><td>power header</td></tr>
-        <tr><td class="pin">GND</td><td>common ground: both drivers, switch COMs, motor supply −</td><td>power header, or beside D13</td></tr>
-        <tr><td class="pin c-mute">D0, D1</td><td>USB serial</td><td>leave free</td></tr>
+        <tr><td class="pin c-sig">D2</td><td class="mono">Z1_DIR_PIN</td><td>Z1 driver DIR</td><td></td></tr>
+        <tr><td class="pin c-sig">D3</td><td class="mono">Z1_STEP_PIN</td><td>Z1 driver STEP</td><td></td></tr>
+        <tr><td class="pin c-sig">D4</td><td class="mono">Z2_DIR_PIN</td><td>Z2 driver DIR</td><td></td></tr>
+        <tr><td class="pin c-sig">D5</td><td class="mono">Z2_STEP_PIN</td><td>Z2 driver STEP</td><td></td></tr>
+        <tr><td class="pin c-sig">D6</td><td class="mono">Z1_ENA_PIN, Z2_ENA_PIN</td><td>ENABLE on <em>both</em> drivers</td><td>low = on. 10 kΩ to 5 V recommended</td></tr>
+        <tr><td class="pin c-sig">D7</td><td class="mono">Z1_MIN_PIN</td><td>Z1 MIN switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D8</td><td class="mono">Z1_MAX_PIN</td><td>Z1 MAX switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D9</td><td class="mono">Z2_MIN_PIN</td><td>Z2 MIN switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-sig">D10</td><td class="mono">Z2_MAX_PIN</td><td>Z2 MAX switch, NC</td><td>COM to GND</td></tr>
+        <tr><td class="pin c-pwr">5V</td><td class="c-mute">none</td><td>VDD, MS1, MS2 on both drivers</td><td>power header</td></tr>
+        <tr><td class="pin">GND</td><td class="c-mute">none</td><td>common ground: both drivers, switch COMs, motor supply −</td><td>power header, or beside D13</td></tr>
+        <tr><td class="pin c-mute">D0, D1</td><td class="c-mute">none</td><td>USB serial</td><td>leave free</td></tr>
       </tbody>
     </table>
   </div>
