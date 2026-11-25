@@ -157,7 +157,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
 <main class="wrap">
 
 <header>
-  <div class="eyebrow">xsphere-lens-z · firmware lens_z 1.1 · Arduino Mega 2560 · A4988</div>
+  <div class="eyebrow">xsphere-lens-z · firmware lens_z 1.1 · Arduino Mega 2560 · A4988 · PK243M-02BA</div>
   <h1>Lens Z wiring</h1>
   <p>Two A4988 carriers drive Z1 and Z2, both pushing one lens along one axis, with a MIN and a MAX limit switch on each motor. Check the build against the figures, then work through the checklist at the bottom before motor power goes on.</p>
   <div class="warn" role="note">
@@ -185,9 +185,9 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       <svg viewBox="0 0 760 400" role="img" aria-label="Block diagram: the Arduino Mega sends STEP and DIR to each A4988 separately and ENABLE to both; the motor supply feeds VMOT on both drivers; each driver runs one motor; four limit switches report to the Mega; every block shares one ground.">
         <!-- motor leads -->
         <line class="w w-mot" x1="380" y1="66" x2="380" y2="110"/>
-        <text class="t-lbl t-mute" x="390" y="92">4 wires</text>
+        <text class="t-lbl t-mute" x="390" y="92">4 of 6 wires</text>
         <line class="w w-mot" x1="380" y1="290" x2="380" y2="334"/>
-        <text class="t-lbl t-mute" x="390" y="316">4 wires</text>
+        <text class="t-lbl t-mute" x="390" y="316">4 of 6 wires</text>
 
         <!-- per-channel signals -->
         <line class="w w-sig" x1="190" y1="150" x2="300" y2="150"/>
@@ -298,11 +298,18 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <line class="w w-mot" x1="530" y1="115" x2="530" y2="170"/>
         <line class="w w-mot" x1="570" y1="115" x2="570" y2="170"/>
         <rect class="blk" x="400" y="20" width="200" height="95" rx="6"/>
-        <text class="t-title" x="500" y="46" text-anchor="middle">Stepper motor · Z1</text>
-        <text class="t-lbl t-mute" x="500" y="64" text-anchor="middle">0.9° · 400 steps/rev</text>
-        <text class="t-lbl" x="450" y="92" text-anchor="middle">coil A</text>
-        <text class="t-lbl" x="550" y="92" text-anchor="middle">coil B</text>
+        <text class="t-title" x="500" y="42" text-anchor="middle">PK243M-02BA · Z1</text>
+        <text class="t-lbl t-mute" x="500" y="60" text-anchor="middle">0.9° · 0.42 A · 6 leads</text>
+        <text class="t-lbl" x="450" y="84" text-anchor="middle">phase A</text>
+        <text class="t-lbl" x="550" y="84" text-anchor="middle">phase B</text>
         <path class="w w-thin" d="M430 115 V100 H470 V115 M530 115 V100 H570 V115"/>
+        <path class="w w-chk" d="M450 100 V124 M444 124 h12 M550 100 V124 M544 124 h12"/>
+        <text class="t-lbl t-chk" x="450" y="139" text-anchor="middle">YEL</text>
+        <text class="t-lbl t-chk" x="550" y="139" text-anchor="middle">WHT</text>
+        <text class="t-lbl t-mute" x="434" y="161">BLK</text>
+        <text class="t-lbl t-mute" x="474" y="161">GRN</text>
+        <text class="t-lbl t-mute" x="534" y="161">RED</text>
+        <text class="t-lbl t-mute" x="574" y="161">BLU</text>
 
         <!-- driver -->
         <rect class="blk" x="360" y="170" width="280" height="230" rx="6"/>
@@ -360,6 +367,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
     <figcaption>
       <div><b>Fig 2</b>MS1 and MS2 at 5 V with MS3 open selects 1/8 microstepping, which matches <code>MICROSTEPS 8</code>. The chip pulls all three low internally, so a loose MS wire silently becomes full step.</div>
       <div>The 10 kΩ holds ENABLE high, so the outputs stay off while the Mega's pins float during a reset. A reset happens every time the DAQ opens the port. One resistor serves both drivers.</div>
+      <div>The PK243M-02BA has six leads. Yellow and white are the centre taps of the two phases: insulate each end on its own and connect nothing to them. That is bipolar series, rated 0.42 A per phase. Either 12 V or 24 V runs it at these speeds. Oriental Motor measures its torque curve at 24 V.</div>
       <div>The ground bus can run through the carriers. Wire supply − to each driver's top GND pin and Mega GND to each bottom GND pin; the board joins the two, as in Pololu's diagram.</div>
     </figcaption>
   </figure>
@@ -445,10 +453,12 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <!-- coils -->
         <polyline class="w w-mot" points="370,136 394,136 394,174 370,174"/>
         <line class="w w-mot" x1="394" y1="155" x2="410" y2="155"/>
-        <text class="t-lbl" x="416" y="159">motor coil B</text>
+        <text class="t-lbl" x="416" y="153">2B BLU · 2A RED</text>
+        <text class="t-lbl t-chk" x="416" y="167">WHT: tape off</text>
         <polyline class="w w-mot" points="370,212 394,212 394,250 370,250"/>
         <line class="w w-mot" x1="394" y1="231" x2="410" y2="231"/>
-        <text class="t-lbl" x="416" y="235">motor coil A</text>
+        <text class="t-lbl" x="416" y="229">1A BLK · 1B GRN</text>
+        <text class="t-lbl t-chk" x="416" y="243">YEL: tape off</text>
 
         <!-- logic supply -->
         <line class="w w-pwr" x1="370" y1="288" x2="384" y2="288"/>
@@ -568,7 +578,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
         <li><label><input type="checkbox" id="a1"><span class="txt"><strong>One ground.</strong><span>Supply −, Mega GND, both GND pins on both drivers and all four switch COMs beep to each other.</span></span></label></li>
         <li><label><input type="checkbox" id="a2"><span class="txt"><strong>No shorts.</strong><span>Supply + to supply − is silent, and so is VMOT to GND on each driver.</span></span></label></li>
         <li><label><input type="checkbox" id="a3"><span class="txt"><strong>Supply + goes only to VMOT.</strong><span>Not to the Mega's Vin or 5V. The Mega runs on USB.</span></span></label></li>
-        <li><label><input type="checkbox" id="a4"><span class="txt"><strong>Coils paired.</strong><span>On each motor, the two wires reading a few ohms go to 1A/1B. The other pair goes to 2A/2B. Between pairs: open.</span></span></label></li>
+        <li><label><input type="checkbox" id="a4m"><span class="txt"><strong>Phases paired, centre taps insulated.</strong><span>Black–green and red–blue each read about 20 Ω. An end to its centre tap (yellow or white) reads about 10 Ω. Black → 1A, green → 1B, red → 2A, blue → 2B. Yellow and white are each taped off on their own. A wired pair reading 10 Ω means a tap is in it.</span></span></label></li>
         <li><label><input type="checkbox" id="a5"><span class="txt"><strong>RST jumpered to SLP</strong> on both drivers.<span>Without it, the chip ignores every step pulse.</span></span></label></li>
         <li><label><input type="checkbox" id="a6"><span class="txt"><strong>MS1 and MS2 to 5 V, MS3 open</strong> on both drivers.<span>Gives 1/8 microstepping, which matches the firmware.</span></span></label></li>
         <li><label><input type="checkbox" id="a7"><span class="txt"><strong>100 µF across VMOT/GND</strong> on each driver, short leads, stripe to GND.</span></label></li>
@@ -599,7 +609,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule)
       </div>
       <ul class="checks">
         <li><label><input type="checkbox" id="c1"><span class="txt"><strong>Read RS off each carrier.</strong><span><code>R050</code> = 0.050 Ω, <code>R068</code> = 0.068 Ω, <code>R100</code> = 0.100 Ω.</span></span></label></li>
-        <li><label><input type="checkbox" id="c2"><span class="txt"><strong>Set VREF on each pot</strong>, measured to GND.<span>VREF = 8 × RS × I. For 1.0 A: 0.40 / 0.54 / 0.80 V. Start at 60–70 % of the motor's rated current.</span></span></label></li>
+        <li><label><input type="checkbox" id="c2m"><span class="txt"><strong>Set VREF on each pot</strong>, measured to GND.<span>VREF = 8 × RS × I. The PK243M-02BA is rated 0.42 A. Start at 0.30 A: 0.12 / 0.16 / 0.24 V for R050 / R068 / R100. The full rating is 0.17 / 0.23 / 0.34 V. Turn the pot slowly: a few degrees is tens of millivolts.</span></span></label></li>
         <li><label><input type="checkbox" id="c3"><span class="txt"><strong>Power everything off, then plug the motors in.</strong><span>Next: the bring-up in the README (direction, scale, <code>travel</code>), with the lens uncoupled.</span></span></label></li>
       </ul>
     </div>

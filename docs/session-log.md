@@ -14,6 +14,31 @@ absolute. See the [README](../README.md) for the wiring and the protocol.
 
 ---
 
+## 2026-11-24 (night) — Motors are Oriental Motor PK243M-02BA
+
+Taken from Oriental Motor's PK-series catalog (42 mm, 0.9° table); the PDF
+text was extracted locally. Bipolar series: **0.42 A/phase**, 20 Ω, 38.8 mH,
+0.2 N·m holding. Unipolar: 0.6 A, 10 Ω, 9.7 mH. 0.9° per step,
+**6 lead wires**, double shaft (`BA`). The catalog measures the bipolar
+torque curve on a 24 VDC constant-current driver.
+
+What it changed:
+- **Six wires into a four-wire driver.** Oriental Motor's code: black–yellow–
+  green is one phase, red–white–blue the other, with yellow and white the centre
+  taps. Bipolar series means black → 1A, green → 1B, red → 2A, blue → 2B, and
+  yellow and white each insulated. Oriental's unipolar/bipolar page and the
+  PKP manuals agree.
+- The page's old pairing advice ("the two wires reading a few ohms") could
+  select a centre tap on this motor. That gives half a winding, and the motor
+  still turns, so the mistake is easy to miss. The check is now explicit:
+  ends read about 20 Ω, an end to its tap about 10 Ω. The checklist item has a
+  new id, so an old tick clears.
+- VREF for 0.42 A is small: start at 0.30 A, which is 0.12 / 0.16 / 0.24 V for
+  R050 / R068 / R100.
+- `STEPS_PER_REV 400` was already right.
+
+---
+
 ## 2026-11-24 (evening) — Firmware 1.1 after a second review; wiring schematic
 
 Lucas has the Mega, two Pololu green A4988 carriers, the motors and the

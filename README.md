@@ -157,6 +157,62 @@ crashing the lens would destroy something expensive.
 
 ---
 
+## The motor: Oriental Motor PK243M-02BA
+
+From Oriental Motor's PK-series catalog (42 mm frame, 0.9° high-resolution table):
+
+| | bipolar series (use this) | unipolar |
+|---|---|---|
+| current per phase | **0.42 A** | 0.6 A |
+| resistance per phase | 20 Ω | 10 Ω |
+| inductance per phase | 38.8 mH | 9.7 mH |
+| holding torque | 0.2 N·m | 0.16 N·m |
+
+It steps 0.9°, so `STEPS_PER_REV 400` is right. It has 6 lead wires and a
+double shaft (`BA`; `AA` is the single-shaft version).
+
+**It is a six-wire motor, and the A4988 drives four.** Each phase is a winding
+with a centre tap. Oriental Motor's colour code is **black–yellow–green** for
+one phase and **red–white–blue** for the other, with **yellow and white as the
+centre taps**. For bipolar series:
+
+| wire | goes to |
+|---|---|
+| black | 1A |
+| green | 1B |
+| red | 2A |
+| blue | 2B |
+| yellow | nothing: insulate the end |
+| white | nothing: insulate the end, separately from yellow |
+
+**Check with a meter before trusting the colours.** Black–green and red–blue
+should each read about **20 Ω**. Black or green to yellow reads about
+**10 Ω**, and so does red or blue to white. Anything between the two groups is
+open. If a pair you have wired to 1A/1B reads 10 Ω, one of the two is a centre
+tap. The motor still turns, on half a winding, which is why the check matters:
+it is easy to miss.
+
+**Current.** 0.42 A per phase is low for an A4988, so VREF is small:
+
+| RS | 0.30 A (start here) | 0.42 A (rated) |
+|---|---|---|
+| `R050` | 0.12 V | 0.17 V |
+| `R068` | 0.16 V | 0.23 V |
+| `R100` | 0.24 V | 0.34 V |
+
+Turn the pot slowly: a few degrees is tens of millivolts here. 0.30 A is
+plenty. The motor holds 0.2 N·m at full current, and on a 0.5 mm lead that is
+far more axial force than a lens mount needs. At 0.30 A the two windings
+dissipate about 1.8 W while moving, against 3.5 W at the full rating (I²R with
+20 Ω).
+
+**Supply.** The winding is slow (38.8 mH), and a chopper driver pushes current
+into it with supply voltage. Either 12 V or 24 V runs it at this firmware's
+speeds: at most 500 full steps/s, or 75 r/min. Oriental Motor measures its own
+bipolar torque curve for this motor at 24 V, so use 24 V if you have it.
+
+---
+
 ## Wiring the drivers — A4988
 
 The top-side marking **`4988ET`** is the Allegro **A4988** in the 28-pin QFN
@@ -200,10 +256,11 @@ only thing that knows where the stage really is.
   output swings the full 0–5 V, so no level shifting and no pull-ups.
 * **The motor supply − must be tied to Arduino GND.** STEP and DIR are
   referenced to it; without a shared ground they mean nothing.
-* **1A/1B is one coil, 2A/2B the other.** Find the pairs with a multimeter —
-  the two wires reading a few ohms to each other are one coil. Swapping the
-  two wires *within* a coil reverses that axis, which is what `Z1_DIR_INVERT`
-  is for; swapping wires *between* coils makes the motor buzz and not turn.
+* **1A/1B is one phase, 2A/2B the other.** For the PK243M-02BA that is
+  black/green and red/blue, with yellow and white insulated (see the motor
+  section above). Swapping the two wires *within* a phase reverses that axis,
+  which is what `Z1_DIR_INVERT` is for. Swapping wires *between* phases makes
+  the motor buzz and not turn.
 * **STEP timing [DS]:** minimum 1 µs high, 1 µs low, with 200 ns setup and
   hold on DIR/MSx. AccelStepper on a 16 MHz AVR spends several microseconds
   per `digitalWrite`, so it cannot get near these limits. Nothing to tune.
@@ -303,7 +360,9 @@ VREF matches the table, then power down before plugging the motor in.
 Set it to the motor's rated phase current *or below*. For this axis start at
 **60–70 % of the rating**: a lens on a leadscrew needs very little torque, and
 every watt you do not put in is a watt that does not end up as drift in an
-optical mount. If it skips steps, raise it.
+optical mount. If it skips steps, raise it. For the PK243M-02BA (0.42 A
+rated) that means starting near 0.30 A. The VREF values are in the motor
+section.
 
 ### Supplies, and the two things that kill these boards
 

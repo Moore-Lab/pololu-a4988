@@ -99,7 +99,7 @@
 // ===========================================================================
 //  Mechanics
 // ===========================================================================
-#define STEPS_PER_REV 400.0f     // 0.9 deg motor. A 1.8 deg motor is 200.
+#define STEPS_PER_REV 400.0f     // PK243M-02BA: 0.9 deg/step. A 1.8 deg motor is 200.
 #define MICROSTEPS 8             // must match the driver's DIP/MS jumpers
 
 // [CHANGED] The reference multiplied by a bare 2 with a note that the comment
